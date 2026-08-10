@@ -69,6 +69,24 @@ def test_initial_migration_creates_required_tables(migrated_engine: Engine) -> N
     assert EXPECTED_TABLES <= set(inspect(migrated_engine).get_table_names())
 
 
+def test_alembic_config_defaults_to_durable_data_path() -> None:
+    config = Config(str(PROJECT_ROOT / "alembic.ini"))
+
+    assert config.get_main_option("sqlalchemy.url") == "sqlite:////data/shred.db"
+
+
+def test_initial_migration_requires_event_supporting_fields(migrated_engine: Engine) -> None:
+    columns = {
+        column["name"]: column
+        for column in inspect(migrated_engine).get_columns("activity_events")
+    }
+
+    assert columns["source_fragment"]["nullable"] is False
+    assert columns["occurred_at"]["nullable"] is False
+    assert columns["occurrence_precision"]["nullable"] is False
+    assert columns["part_of_day"]["nullable"] is True
+
+
 def test_category_name_uniqueness_respects_parent_scope(migrated_engine: Engine) -> None:
     with migrated_engine.begin() as connection:
         connection.execute(
@@ -123,6 +141,9 @@ def test_foreign_keys_reject_orphan_events_and_cascade_source_deletion(
         "source_message_id": source_id,
         "position": 0,
         "title": "Review",
+        "source_fragment": "Schedule review",
+        "occurred_at": now,
+        "occurrence_precision": "minute",
         "status": "pending",
     }
 
@@ -130,8 +151,11 @@ def test_foreign_keys_reject_orphan_events_and_cascade_source_deletion(
         with pytest.raises(IntegrityError):
             connection.execute(
                 text(
-                    "INSERT INTO activity_events (id, source_message_id, position, title, status) "
-                    "VALUES (:id, :source_message_id, :position, :title, :status)"
+                    "INSERT INTO activity_events "
+                    "(id, source_message_id, position, title, source_fragment, occurred_at, "
+                    "occurrence_precision, status) VALUES "
+                    "(:id, :source_message_id, :position, :title, :source_fragment, "
+                    ":occurred_at, :occurrence_precision, :status)"
                 ),
                 {**event_values, "source_message_id": str(uuid4())},
             )
@@ -145,8 +169,11 @@ def test_foreign_keys_reject_orphan_events_and_cascade_source_deletion(
         )
         connection.execute(
             text(
-                "INSERT INTO activity_events (id, source_message_id, position, title, status) "
-                "VALUES (:id, :source_message_id, :position, :title, :status)"
+                "INSERT INTO activity_events "
+                "(id, source_message_id, position, title, source_fragment, occurred_at, "
+                "occurrence_precision, status) VALUES "
+                "(:id, :source_message_id, :position, :title, :source_fragment, "
+                ":occurred_at, :occurrence_precision, :status)"
             ),
             event_values,
         )
