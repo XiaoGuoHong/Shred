@@ -340,4 +340,47 @@ export const server = setupServer(
     submittedEvents.delete(id as string);
     return new HttpResponse(null, { status: 204 });
   }),
+
+  http.post("/api/categories", async ({ request }) => {
+    const body = (await request.json()) as { name: string; parent_id?: string };
+    const newCat: CategoryNode = {
+      id: `cat-new-${Date.now()}`,
+      name: body.name,
+      normalized_name: body.name.toLowerCase(),
+      parent_id: body.parent_id,
+      children: [],
+      event_count: 0,
+      total_event_count: 0,
+    };
+    return HttpResponse.json(newCat, { status: 201 });
+  }),
+
+  http.patch("/api/categories/:id", async ({ params, request }) => {
+    const body = (await request.json()) as { name: string };
+    return HttpResponse.json({
+      id: params.id,
+      name: body.name,
+      normalized_name: body.name.toLowerCase(),
+      children: [],
+      event_count: 0,
+      total_event_count: 0,
+    } as CategoryNode);
+  }),
+
+  http.post("/api/categories/merge", () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/categories/:id/impact", ({ params }) => {
+    return HttpResponse.json({
+      category_id: params.id,
+      category_name: "测试分类",
+      child_count: 2,
+      event_count: 5,
+    });
+  }),
+
+  http.delete("/api/categories/:id", () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
 );

@@ -6,6 +6,7 @@ import type {
   SubmitMessageInput,
   ApiError,
   TimelineParams,
+  DeleteImpact,
 } from "@/api/types";
 
 const BASE = "/api";
@@ -113,6 +114,38 @@ export const api = {
 
   async deleteMessage(id: string): Promise<void> {
     return request<void>(`${BASE}/messages/${id}`, { method: "DELETE" });
+  },
+
+  async createCategory(data: { name: string; parent_id?: string }): Promise<CategoryNode> {
+    return request<CategoryNode>(`${BASE}/categories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async renameCategory(id: string, data: { name: string }): Promise<CategoryNode> {
+    return request<CategoryNode>(`${BASE}/categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async mergeCategories(data: { source_id: string; target_id: string }): Promise<void> {
+    return request<void>(`${BASE}/categories/merge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getDeleteImpact(id: string): Promise<DeleteImpact> {
+    return request<DeleteImpact>(`${BASE}/categories/${id}/impact`);
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    return request<void>(`${BASE}/categories/${id}`, { method: "DELETE" });
   },
 
   async health(): Promise<{ status: string }> {

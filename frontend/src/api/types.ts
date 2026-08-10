@@ -76,3 +76,10 @@ export interface TimelineParams {
   category_id?: string;
   status?: string;
 }
+
+export interface DeleteImpact {
+  category_id: string;
+  category_name: string;
+  child_count: number;
+  event_count: number;
+}
