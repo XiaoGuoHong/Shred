@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shred"
+version = "0.1.0"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "fastapi[standard]==0.139.2",
+    "sqlalchemy==2.0.51",
+    "alembic==1.18.5",
+    "pydantic-settings>=2.10,<3",
+    "openai>=2.46,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "pytest-cov>=6,<8",
+    "ruff>=0.12,<1",
+    "httpx>=0.28,<1",
+]
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shred"]
