@@ -21,11 +21,11 @@ describe("App", () => {
     expect(screen.getByText("设置")).toBeInTheDocument();
   });
 
-  it("renders the composer area in main content", () => {
+  it("renders the composer on the default view", () => {
     renderApp();
 
     expect(
-      screen.getByText("在此输入内容开始整理..."),
+      screen.getByPlaceholderText("输入需要整理的内容..."),
     ).toBeInTheDocument();
   });
 

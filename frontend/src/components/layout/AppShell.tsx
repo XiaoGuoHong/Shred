@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import type { ViewSelection } from "@/api/types";
@@ -6,9 +6,11 @@ import type { ViewSelection } from "@/api/types";
 export function AppShell({
   view,
   onViewChange,
+  children,
 }: {
   view: ViewSelection;
   onViewChange: (v: ViewSelection) => void;
+  children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -27,11 +29,7 @@ export function AppShell({
 
       <Sidebar view={view} onViewChange={onViewChange} />
 
-      <main className="app-main">
-        <div className="composer-area">
-          <p className="composer-placeholder">在此输入内容开始整理...</p>
-        </div>
-      </main>
+      <main className="app-main">{children}</main>
 
       <MobileDrawer
         open={drawerOpen}
