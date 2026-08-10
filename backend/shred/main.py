@@ -12,6 +12,7 @@ from shred.core.config import get_env_settings
 from shred.core.database import get_session
 from shred.messages.router import router as messages_router
 from shred.messages.service import MessageService
+from shred.events.router import router as events_router
 from shred.taxonomy.router import router as taxonomy_router
 
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
 
     app.include_router(taxonomy_router, prefix="/api/categories", tags=["categories"])
     app.include_router(messages_router, prefix="/api/messages", tags=["messages"])
+    app.include_router(events_router, prefix="/api/events", tags=["events"])
 
     @app.get("/api/health")
     def health(_: Annotated[Session, Depends(get_session)]) -> dict[str, str]:
