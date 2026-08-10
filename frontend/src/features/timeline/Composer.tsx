@@ -1,23 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildSubmissionInput } from "@/api/client";
 import type { TimelineGroup, TimelinePage, SubmitMessageInput } from "@/api/types";
-
-const DRAFT_KEY = "shred:composer-draft";
+import { usePersistentDraft } from "@/hooks/usePersistentDraft";
 
 export function Composer({
   onSubmitted,
 }: {
   onSubmitted: (messageId: string) => void;
 }) {
-  const [text, setText] = useState(
-    () => localStorage.getItem(DRAFT_KEY) ?? "",
-  );
+  const { text, setText, clearDraft } = usePersistentDraft();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    localStorage.setItem(DRAFT_KEY, text);
-  }, [text]);
 
   const trim = text.trim();
 
@@ -71,8 +64,7 @@ export function Composer({
         }
       }
 
-      setText("");
-      localStorage.removeItem(DRAFT_KEY);
+      clearDraft();
       onSubmitted(data.message.id);
       queryClient.invalidateQueries({ queryKey: ["categories"] });
     },

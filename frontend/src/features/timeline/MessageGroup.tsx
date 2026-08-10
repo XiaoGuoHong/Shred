@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { TimelineGroup } from "@/api/types";
 import { EventCard } from "@/features/timeline/EventCard";
+import { PendingSource } from "@/features/events/PendingCard";
 
 export function MessageGroup({
   group,
@@ -26,33 +28,37 @@ export function MessageGroup({
     },
   });
 
-  const retryMutation = useMutation({
-    mutationFn: (id: string) =>
-      fetch(`/api/messages/${id}/retry`, { method: "POST" }),
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteMessage(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["timeline"] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 
+  const classifiedEvents = events.filter((e) => e.status !== "pending" && e.status !== "error");
+  const pendingEvents = events.filter((e) => e.status === "pending" || e.status === "error");
+
+  if (isError || isPending) {
+    return (
+      <div className="message-group message-group-pending">
+        <PendingSource message={message} />
+        {pendingEvents.length > 0 && (
+          <div className="message-group-events">
+            {pendingEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className={`message-group${isPending ? " message-group-pending" : ""}`}>
+    <div className="message-group">
       <div className="message-group-header">
         <p className="message-group-text">{message.original_text}</p>
-        {isError && message.error_summary && (
-          <p className="message-group-error">{message.error_summary}</p>
-        )}
         <div className="message-group-actions">
-          {isPending && (
-            <button
-              className="message-group-retry"
-              onClick={() => retryMutation.mutate(message.id)}
-              disabled={retryMutation.isPending}
-            >
-              重新分类
-            </button>
-          )}
-          {canUndo && !isPending && (
+          {canUndo && (
             <button
               className="message-group-undo"
               onClick={() => undoMutation.mutate(message.id)}
@@ -61,10 +67,25 @@ export function MessageGroup({
               撤销本次提交
             </button>
           )}
+          <button
+            className="message-group-delete-source"
+            onClick={() => {
+              const count = events.length;
+              const msg = count > 0
+                ? `此操作将同时删除 ${count} 条关联的活动记录，确定要继续吗？`
+                : "确定要删除这条源消息吗？";
+              if (window.confirm(msg)) {
+                deleteMutation.mutate(message.id);
+              }
+            }}
+            disabled={deleteMutation.isPending}
+          >
+            删除
+          </button>
         </div>
       </div>
       <div className="message-group-events">
-        {events.map((event) => (
+        {classifiedEvents.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>

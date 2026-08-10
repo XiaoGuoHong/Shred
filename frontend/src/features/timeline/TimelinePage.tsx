@@ -4,6 +4,7 @@ import { api } from "@/api/client";
 import type { ViewSelection, TimelineParams } from "@/api/types";
 import { Composer } from "@/features/timeline/Composer";
 import { MessageGroup } from "@/features/timeline/MessageGroup";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 const PAGE_SIZE = 50;
 
@@ -25,6 +26,7 @@ export function TimelinePage({ view }: { view: ViewSelection }) {
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
+  const { isBackendReachable } = useOnlineStatus();
 
   const params = { ...viewToParams(view), page };
 
@@ -80,6 +82,9 @@ export function TimelinePage({ view }: { view: ViewSelection }) {
 
   return (
     <div className="timeline">
+      {!isBackendReachable && (
+        <div className="timeline-offline-banner">本地服务不可用</div>
+      )}
       {showComposer && <Composer onSubmitted={handleSubmitted} />}
       {timelineQuery.isLoading && (
         <div className="timeline-loading">加载中...</div>

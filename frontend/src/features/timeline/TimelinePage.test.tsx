@@ -137,25 +137,27 @@ describe("TimelinePage", () => {
   });
 
   it("undo button disappears after 10 seconds", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.useFakeTimers();
 
     renderTimeline();
 
     const textarea = screen.getByPlaceholderText("输入需要整理的内容...");
-    await user.type(textarea, "测试撤销功能");
-    vi.advanceTimersByTime(200);
-
-    await user.click(screen.getByText("提交"));
-    vi.advanceTimersByTime(200);
+    act(() => {
+      fireEvent.change(textarea, { target: { value: "测试撤销功能" } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByText("提交"));
+    });
 
     expect(screen.getByText("撤销本次提交")).toBeInTheDocument();
 
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
+    act(() => {
+      vi.advanceTimersByTime(11000);
     });
 
     expect(screen.queryByText("撤销本次提交")).not.toBeInTheDocument();
+
+    vi.useRealTimers();
   }, 15000);
 
   it("clicking undo calls undo API and removes group", async () => {
@@ -181,25 +183,27 @@ describe("TimelinePage", () => {
   });
 
   it("undo expiry keeps the message data", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.useFakeTimers();
 
     renderTimeline();
 
     const textarea = screen.getByPlaceholderText("输入需要整理的内容...");
-    await user.type(textarea, "测试过期撤销");
-    vi.advanceTimersByTime(200);
-
-    await user.click(screen.getByText("提交"));
-    vi.advanceTimersByTime(200);
+    act(() => {
+      fireEvent.change(textarea, { target: { value: "测试过期撤销" } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByText("提交"));
+    });
 
     expect(screen.getByText("撤销本次提交")).toBeInTheDocument();
 
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
+    act(() => {
+      vi.advanceTimersByTime(11000);
     });
 
     expect(screen.queryByText("撤销本次提交")).not.toBeInTheDocument();
     expect(screen.getByText("测试过期撤销")).toBeInTheDocument();
+
+    vi.useRealTimers();
   }, 15000);
 });

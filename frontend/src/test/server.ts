@@ -287,4 +287,57 @@ export const server = setupServer(
     }
     return HttpResponse.json({ status: "ok" });
   }),
+
+  http.patch("/api/events/:id", async ({ params, request }) => {
+    const { id } = params;
+    const body = (await request.json()) as Record<string, unknown>;
+    for (const [msgId, events] of submittedEvents) {
+      const idx = events.findIndex((e) => e.id === id);
+      if (idx !== -1) {
+        const updated = { ...events[idx]!, ...body };
+        events[idx] = updated;
+        return HttpResponse.json(updated);
+      }
+    }
+    for (const [, events] of Object.entries(sampleEvents)) {
+      const idx = events.findIndex((e) => e.id === id);
+      if (idx !== -1) {
+        const updated = { ...events[idx]!, ...body };
+        events[idx] = updated;
+        return HttpResponse.json(updated);
+      }
+    }
+    return HttpResponse.json({ error: { code: "not_found", message: "Not found" } }, { status: 404 });
+  }),
+
+  http.delete("/api/events/:id", ({ params }) => {
+    const { id } = params;
+    for (const [, events] of submittedEvents) {
+      const idx = events.findIndex((e) => e.id === id);
+      if (idx !== -1) {
+        events.splice(idx, 1);
+        return new HttpResponse(null, { status: 204 });
+      }
+    }
+    for (const [, events] of Object.entries(sampleEvents)) {
+      const idx = events.findIndex((e) => e.id === id);
+      if (idx !== -1) {
+        events.splice(idx, 1);
+        return new HttpResponse(null, { status: 204 });
+      }
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post("/api/events/:id/reclassify", ({ params }) => {
+    const { id } = params;
+    return HttpResponse.json({ status: "ok" });
+  }),
+
+  http.delete("/api/messages/:id", ({ params }) => {
+    const { id } = params;
+    submittedStore.delete(id as string);
+    submittedEvents.delete(id as string);
+    return new HttpResponse(null, { status: 204 });
+  }),
 );

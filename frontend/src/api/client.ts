@@ -2,6 +2,7 @@ import type {
   TimelinePage,
   CategoryNode,
   MessageDetail,
+  ActivityEvent,
   SubmitMessageInput,
   ApiError,
   TimelineParams,
@@ -44,6 +45,9 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     }
     throw new ApiClientError("unexpected_response", "Unexpected response");
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   try {
     return (await res.json()) as T;
   } catch {
@@ -85,6 +89,30 @@ export const api = {
 
   async undoMessage(id: string): Promise<void> {
     await request<void>(`${BASE}/messages/${id}/undo`, { method: "POST" });
+  },
+
+  async updateEvent(id: string, patch: Record<string, unknown>): Promise<ActivityEvent> {
+    return request<ActivityEvent>(`${BASE}/events/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+  },
+
+  async deleteEvent(id: string): Promise<void> {
+    return request<void>(`${BASE}/events/${id}`, { method: "DELETE" });
+  },
+
+  async reclassifyEvent(id: string): Promise<ActivityEvent> {
+    return request<ActivityEvent>(`${BASE}/events/${id}/reclassify`, { method: "POST" });
+  },
+
+  async retryMessage(id: string): Promise<{ status: string }> {
+    return request<{ status: string }>(`${BASE}/messages/${id}/retry`, { method: "POST" });
+  },
+
+  async deleteMessage(id: string): Promise<void> {
+    return request<void>(`${BASE}/messages/${id}`, { method: "DELETE" });
   },
 
   async health(): Promise<{ status: string }> {
