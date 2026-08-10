@@ -1,0 +1,14 @@
+services:
+  shred:
+    build: .
+    ports:
+      - "${SHRED_BIND_ADDRESS:-127.0.0.1}:${SHRED_PORT:-8000}:8000"
+    volumes:
+      - "${SHRED_DATA_DIR:-./data}:/data"
+    environment:
+      SHRED_DATABASE_URL: sqlite:////data/shred.db
+      SHRED_OPENAI_API_KEY: ${SHRED_OPENAI_API_KEY:-}
+      SHRED_API_BASE_URL: ${SHRED_API_BASE_URL:-https://api.openai.com/v1}
+      SHRED_MODEL: ${SHRED_MODEL:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TimelinePage } from "@/features/timeline/TimelinePage";
 import { CategoryManager } from "@/features/categories/CategoryManager";
+import { SettingsPage } from "@/features/settings/SettingsPage";
 import type { ViewSelection } from "@/api/types";
 
 export function App() {
@@ -12,9 +13,7 @@ export function App() {
       {view.kind === "manage-categories" ? (
         <CategoryManager onViewChange={setView} />
       ) : view.kind === "settings" ? (
-        <div className="placeholder-page">
-          <p className="placeholder-text">设置（即将推出）</p>
-        </div>
+        <SettingsPage />
       ) : (
         <TimelinePage view={view} />
       )}

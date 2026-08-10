@@ -16,6 +16,7 @@ export default defineConfig({
         theme_color: "#1a1a2e",
         background_color: "#1a1a2e",
         start_url: "/",
+        scope: "/",
         display: "standalone",
         icons: [
           {
@@ -29,10 +30,10 @@ export default defineConfig({
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/maskable-512x512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "maskable",
           },
         ],
       },
@@ -59,5 +60,6 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: true,
+    exclude: ["e2e/**", "node_modules/**"],
   },
 });

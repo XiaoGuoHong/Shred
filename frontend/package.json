@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "e2e": "playwright test",
-    "generate:icons": "pwa-assets-generator"
+    "generate:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "react": "19.2.8",

@@ -1,19 +1,21 @@
+import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from shred.core.config import get_env_settings
 from shred.core.database import get_session
-from shred.messages.router import router as messages_router
-from shred.messages.service import MessageService
 from shred.events.router import router as events_router
 from shred.export.router import router as export_router
+from shred.messages.router import router as messages_router
+from shred.messages.service import MessageService
 from shred.settings.router import preferences_router, settings_router
 from shred.taxonomy.router import router as taxonomy_router
 from shred.timeline.router import router as timeline_router
@@ -59,6 +61,9 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     def health(_: Annotated[Session, Depends(get_session)]) -> dict[str, str]:
         return {"status": "ok", "version": "0.1.0"}
+
+    if os.path.isfile(os.path.join("static", "index.html")):
+        app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
     return app
 

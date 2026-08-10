@@ -7,6 +7,7 @@ import type {
   ApiError,
   TimelineParams,
   DeleteImpact,
+  SettingsConfig,
 } from "@/api/types";
 
 const BASE = "/api";
@@ -150,5 +151,69 @@ export const api = {
 
   async health(): Promise<{ status: string }> {
     return request<{ status: string }>(`${BASE}/health`);
+  },
+
+  async getSettings(): Promise<SettingsConfig> {
+    return request<SettingsConfig>(`${BASE}/settings`);
+  },
+
+  async updateSettings(data: {
+    base_url?: string;
+    model?: string;
+    lan_listen?: boolean;
+  }): Promise<SettingsConfig> {
+    return request<SettingsConfig>(`${BASE}/settings`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async testConnection(): Promise<{ status: string; message?: string }> {
+    return request<{ status: string; message?: string }>(
+      `${BASE}/settings/test-connection`,
+      { method: "POST" },
+    );
+  },
+
+  async clearPreferences(): Promise<void> {
+    return request<void>(`${BASE}/preferences`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
+  },
+
+  async exportData(): Promise<void> {
+    const res = await fetch(`${BASE}/export`);
+    if (!res.ok) {
+      let body: unknown;
+      try {
+        body = await res.json();
+      } catch {
+        throw new ApiClientError("export_failed", "Export failed");
+      }
+      if (isApiError(body)) {
+        throw new ApiClientError(body.error.code, body.error.message);
+      }
+      throw new ApiClientError("export_failed", "Export failed");
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition");
+    let filename = "data.json";
+    if (disposition) {
+      const match = /filename="?([^";\n]+)"?/.exec(disposition);
+      if (match?.[1]) {
+        filename = match[1];
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   },
 };
