@@ -11,6 +11,7 @@ from openai import (
     AuthenticationError,
     RateLimitError,
 )
+from pydantic import ValidationError as PydanticValidationError
 
 from shred.classification.contracts import (
     ClassificationDraft,
@@ -125,6 +126,8 @@ class OpenAIClassifier:
                 return
             openai_api_key = resolved_key.get_secret_value()
 
+        self._openai_api_key = openai_api_key
+        self._model_config = model_config
         self._complete = _build_completion_callable(openai_api_key, model_config, timeout)
 
     def _check_configured(self) -> None:
@@ -180,7 +183,9 @@ class OpenAIClassifier:
                     summary=_sanitize_error_message(str(exc)),
                 )
 
-        raise exc from None
+        raise ClassifierFailure(
+            code="model_unreachable", summary=_sanitize_error_message(str(exc))
+        ) from exc
 
     def _call_complete(self, messages: list[dict[str, str]]) -> str:
         complete = self._ensure_configured()
@@ -198,7 +203,7 @@ class OpenAIClassifier:
         try:
             parsed = extract_json_object(raw)
             return ClassificationDraft.model_validate(parsed)
-        except (ValueError, Exception):  # noqa: BLE001, S110
+        except (ValueError, PydanticValidationError):
             pass
 
         repair_messages = build_classification_messages(request)
@@ -218,7 +223,7 @@ class OpenAIClassifier:
             repaired_raw = self._call_complete(repair_messages)
             parsed = extract_json_object(repaired_raw)
             return ClassificationDraft.model_validate(parsed)
-        except (ValueError, Exception):  # noqa: BLE001
+        except (ValueError, PydanticValidationError):
             return None
 
     def classify(self, request: ClassificationRequest) -> ClassificationDraft:
@@ -240,6 +245,6 @@ class OpenAIClassifier:
 
         if "OK" not in result:
             raise ClassifierFailure(
-                code="model_connection_failed",
+                code="model_unreachable",
                 summary="Model did not respond with OK",
             )
