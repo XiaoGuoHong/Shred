@@ -92,15 +92,15 @@ class TestErrorResponses:
         child_id = r.json()["id"]
         r = client.post("/api/categories", json={"name": "Python", "parent_id": child_id})
         assert r.status_code == 422
-        detail = r.json()["detail"]
-        assert detail["error"]["code"] == "category_depth_exceeded"
+        body = r.json()
+        assert body["error"]["code"] == "category_depth_exceeded"
 
     def test_sibling_duplicate_returns_409(self, client: TestClient) -> None:
         client.post("/api/categories", json={"name": "工作"})
         r = client.post("/api/categories", json={"name": "工作"})
         assert r.status_code == 409
-        detail = r.json()["detail"]
-        assert detail["error"]["code"] == "category_name_conflict"
+        body = r.json()
+        assert body["error"]["code"] == "category_name_conflict"
 
     def test_not_found_returns_404(self, client: TestClient) -> None:
         r = client.patch("/api/categories/nonexistent", json={"name": "X"})
