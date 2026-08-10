@@ -13,7 +13,10 @@ from shred.core.database import get_session
 from shred.messages.router import router as messages_router
 from shred.messages.service import MessageService
 from shred.events.router import router as events_router
+from shred.export.router import router as export_router
+from shred.settings.router import preferences_router, settings_router
 from shred.taxonomy.router import router as taxonomy_router
+from shred.timeline.router import router as timeline_router
 
 
 @asynccontextmanager
@@ -48,6 +51,10 @@ def create_app() -> FastAPI:
     app.include_router(taxonomy_router, prefix="/api/categories", tags=["categories"])
     app.include_router(messages_router, prefix="/api/messages", tags=["messages"])
     app.include_router(events_router, prefix="/api/events", tags=["events"])
+    app.include_router(timeline_router, prefix="/api/timeline", tags=["timeline"])
+    app.include_router(settings_router, prefix="/api/settings", tags=["settings"])
+    app.include_router(preferences_router, prefix="/api/preferences", tags=["preferences"])
+    app.include_router(export_router, prefix="/api/export", tags=["export"])
 
     @app.get("/api/health")
     def health(_: Annotated[Session, Depends(get_session)]) -> dict[str, str]:
