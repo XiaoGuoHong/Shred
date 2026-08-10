@@ -12,6 +12,7 @@ dependencies = [
     "alembic==1.18.5",
     "pydantic-settings>=2.10,<3",
     "openai>=2.46,<3",
+    "tzdata>=2025",
 ]
 
 [project.optional-dependencies]
