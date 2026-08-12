@@ -2,7 +2,7 @@ services:
   shred:
     build: .
     ports:
-      - "${SHRED_BIND_ADDRESS:-127.0.0.1}:${SHRED_PORT:-8000}:8000"
+      - "${SHRED_BIND_ADDRESS:-127.0.0.1}:${SHRED_PORT:-9400}:8000"
     volumes:
       - "${SHRED_DATA_DIR:-./data}:/data"
     environment:

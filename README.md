@@ -17,7 +17,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-打开浏览器访问 http://localhost:8000
+打开浏览器访问 http://localhost:9400
 
 ## API 兼容提供商 / API-Compatible Providers
 
@@ -27,7 +27,7 @@ docker compose up -d
 | `SHRED_API_BASE_URL` | API 地址 | `https://api.openai.com/v1` |
 | `SHRED_MODEL` | 模型名称 | 自动检测 |
 | `SHRED_BIND_ADDRESS` | 监听地址 | `127.0.0.1` |
-| `SHRED_PORT` | 监听端口 | `8000` |
+| `SHRED_PORT` | 监听端口 | `9400` |
 | `SHRED_DATA_DIR` | 数据目录 | `./data` |
 
 支持的兼容 API 包括 OpenAI、Azure OpenAI、Ollama、LM Studio、vLLM，以及任何提供 `/v1/chat/completions` 端点的服务。
@@ -106,7 +106,7 @@ cd frontend && npx playwright test && cd ..
 
 ### 端口冲突 / Port Collision
 
-如果 8000 端口被占用，可通过 `SHRED_PORT` 环境变量更改端口：
+如果 9400 端口被占用，可通过 `SHRED_PORT` 环境变量更改端口：
 
 ```bash
 SHRED_PORT=3000 docker compose up -d
