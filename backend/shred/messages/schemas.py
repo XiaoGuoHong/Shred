@@ -7,8 +7,9 @@ from pydantic import BaseModel, Field
 
 
 class SubmitMessage(BaseModel):
-    source_text: str
+    text: str
     timezone: str
+    submitted_at: datetime
     submission_uuid: str = Field(default_factory=lambda: str(uuid4()))
 
 
@@ -26,7 +27,7 @@ class EventDetail(BaseModel):
     status: str
 
 
-class MessageDetail(BaseModel):
+class MessageView(BaseModel):
     id: str
     submission_uuid: str
     original_text: str
@@ -35,9 +36,13 @@ class MessageDetail(BaseModel):
     status: str
     error_code: str | None
     error_summary: str | None
-    events: list[EventDetail]
     created_at: datetime
     updated_at: datetime
+
+
+class MessageDetail(BaseModel):
+    message: MessageView
+    events: list[EventDetail]
 
 
 class DeleteImpact(BaseModel):

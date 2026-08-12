@@ -19,16 +19,24 @@ class TimelineEvent(BaseModel):
     status: str
 
 
-class TimelineGroup(BaseModel):
-    source_message_id: str
+class TimelineMessage(BaseModel):
+    id: str
+    submission_uuid: str
     original_text: str
     submitted_at: datetime
     timezone: str
+    status: str
+    error_code: str | None
+    error_summary: str | None
+
+
+class TimelineGroup(BaseModel):
+    message: TimelineMessage
     events: list[TimelineEvent]
 
 
 class TimelinePage(BaseModel):
-    items: list[TimelineGroup]
+    groups: list[TimelineGroup]
     total: int
     page: int
     page_size: int

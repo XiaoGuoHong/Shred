@@ -63,7 +63,13 @@ def resolve_occurrence(
     else:
         raise TimeResolutionError(f"未知精度: {draft.precision}")
 
-    if occurred_at - submitted_at > _FUTURE_TOLERANCE:
+    if (
+        occurred_at - submitted_at > _FUTURE_TOLERANCE
+        and (
+            draft.precision == "exact"
+            or draft.local_date > submitted_at.astimezone(tz).date()
+        )
+    ):
         raise TimeResolutionError("事件时间不能超过提交时间五分钟")
 
     return ResolvedOccurrence(

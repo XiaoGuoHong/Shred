@@ -60,6 +60,18 @@ def _seed_data(session: Session) -> tuple[SourceMessage, SourceMessage, Category
     session.add(source_b)
     session.flush()
 
+    source_c = SourceMessage(
+        submission_uuid="uuid-c",
+        original_text="分类失败的记录",
+        submitted_at=datetime(2026, 1, 16, 15, 0, 0, tzinfo=UTC),
+        timezone="Asia/Shanghai",
+        status="pending",
+        error_code="model_timeout",
+        error_summary="请求超时",
+    )
+    session.add(source_c)
+    session.flush()
+
     cat_work = Category(id="cat-work", name="工作", normalized_name="工作", origin="agent")
     cat_health = Category(id="cat-health", name="健康", normalized_name="健康", origin="agent")
     session.add_all([cat_work, cat_health])
@@ -135,33 +147,40 @@ class TestTimelineAll:
         r = client.get("/api/timeline")
         assert r.status_code == 200
         data = r.json()
-        assert "items" in data
+        assert "groups" in data
         assert "total" in data
         assert "page" in data
         assert "page_size" in data
 
     def test_groups_ordered_by_occurrence_desc(self, client: TestClient) -> None:
         r = client.get("/api/timeline")
-        items = r.json()["items"]
-        assert len(items) >= 2
-        first_events = items[0]["events"]
-        second_events = items[1]["events"]
-        first_latest = max(e["occurred_at"] for e in first_events)
-        second_latest = max(e["occurred_at"] for e in second_events)
-        assert first_latest >= second_latest
+        groups = r.json()["groups"]
+        assert len(groups) >= 2
+
+        def _sort_key(group: dict) -> str:
+            if group["events"]:
+                return max(e["occurred_at"] for e in group["events"])
+            return group["message"]["submitted_at"]
+
+        first_key = _sort_key(groups[0])
+        second_key = _sort_key(groups[1])
+        assert first_key >= second_key
 
     def test_each_group_has_source_text(self, client: TestClient) -> None:
         r = client.get("/api/timeline")
-        for group in r.json()["items"]:
-            assert "original_text" in group
-            assert len(group["original_text"]) > 0
-            assert "submitted_at" in group
-            assert "timezone" in group
+        for group in r.json()["groups"]:
+            assert "original_text" in group["message"]
+            assert len(group["message"]["original_text"]) > 0
+            assert "submitted_at" in group["message"]
+            assert "timezone" in group["message"]
+            assert "status" in group["message"]
+            if group["message"]["status"] == "pending":
+                continue
             assert len(group["events"]) > 0
 
     def test_events_have_category_path(self, client: TestClient) -> None:
         r = client.get("/api/timeline")
-        for group in r.json()["items"]:
+        for group in r.json()["groups"]:
             for evt in group["events"]:
                 assert "category_path" in evt
                 assert isinstance(evt["category_path"], list)
@@ -171,10 +190,10 @@ class TestTimelineCategoryFilter:
     def test_filter_by_category_returns_only_matching_events(self, client: TestClient) -> None:
         r = client.get("/api/timeline?category_id=cat-health")
         assert r.status_code == 200
-        items = r.json()["items"]
-        assert len(items) >= 1
+        groups = r.json()["groups"]
+        assert len(groups) >= 1
         found_health = False
-        for group in items:
+        for group in groups:
             for evt in group["events"]:
                 assert evt["category_id"] == "cat-health"
                 found_health = True
@@ -182,24 +201,28 @@ class TestTimelineCategoryFilter:
 
     def test_filter_by_category_keeps_source_group(self, client: TestClient) -> None:
         r = client.get("/api/timeline?category_id=cat-health")
-        items = r.json()["items"]
-        for group in items:
-            assert "original_text" in group
-            assert len(group["original_text"]) > 0
+        groups = r.json()["groups"]
+        for group in groups:
+            assert "original_text" in group["message"]
+            assert len(group["message"]["original_text"]) > 0
 
 
 class TestTimelineStatusAndPagination:
     def test_filter_by_status_pending(self, client: TestClient) -> None:
         r = client.get("/api/timeline?status=pending")
         assert r.status_code == 200
-        items = r.json()["items"]
-        assert len(items) >= 1
+        groups = r.json()["groups"]
+        assert len(groups) >= 1
         found_pending = False
-        for group in items:
+        found_pending_source = False
+        for group in groups:
+            if group["message"]["status"] == "pending":
+                found_pending_source = True
             for evt in group["events"]:
                 assert evt["status"] == "pending"
                 found_pending = True
         assert found_pending
+        assert found_pending_source
 
     def test_pagination_defaults(self, client: TestClient) -> None:
         r = client.get("/api/timeline?page=1&page_size=50")
@@ -215,4 +238,4 @@ class TestTimelineStatusAndPagination:
     def test_total_matches_item_count(self, client: TestClient) -> None:
         r = client.get("/api/timeline")
         data = r.json()
-        assert data["total"] >= len(data["items"])
+        assert data["total"] >= len(data["groups"])

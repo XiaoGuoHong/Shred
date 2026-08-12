@@ -42,7 +42,7 @@ def _submit_command(
     tz: str = "Asia/Shanghai",
     uuid: str = "test-uuid-001",
 ) -> SubmitMessage:
-    return SubmitMessage(source_text=text, timezone=tz, submission_uuid=uuid)
+    return SubmitMessage(text=text, timezone=tz, submitted_at=_NOW, submission_uuid=uuid)
 
 
 # ------------------------------------------------------------------
@@ -58,10 +58,10 @@ class TestSubmitHappyPath:
 
         detail = svc.submit(cmd, classifier)
 
-        assert detail.status == "classified"
-        assert detail.submission_uuid == "test-uuid-001"
-        assert detail.original_text == cmd.source_text
-        assert detail.timezone == "Asia/Shanghai"
+        assert detail.message.status == "classified"
+        assert detail.message.submission_uuid == "test-uuid-001"
+        assert detail.message.original_text == cmd.text
+        assert detail.message.timezone == "Asia/Shanghai"
 
     def test_three_events_in_source_order(self, session: Session) -> None:
         classifier = make_interview_classifier(datetime(2026, 1, 15).date())
@@ -113,8 +113,8 @@ class TestSubmitHappyPath:
 
         second = svc.submit(_submit_command(), classifier)
         assert classifier.call_count == 1
-        assert second.id == first.id
-        assert second.submission_uuid == first.submission_uuid
+        assert first.message.id == second.message.id
+        assert second.message.submission_uuid == first.message.submission_uuid
 
     def test_source_text_preserved_exactly(self, session: Session) -> None:
         classifier = make_interview_classifier(datetime(2026, 1, 15).date())
@@ -123,7 +123,7 @@ class TestSubmitHappyPath:
 
         detail = svc.submit(_submit_command(text=text), classifier)
 
-        assert detail.original_text == text
+        assert detail.message.original_text == text
 
     def test_events_have_status_classified(self, session: Session) -> None:
         classifier = make_interview_classifier(datetime(2026, 1, 15).date())
@@ -156,9 +156,9 @@ class TestClassifierFailure:
 
         detail = svc.submit(_submit_command(), classifier)
 
-        assert detail.status == "pending"
-        assert detail.error_code == "model_timeout"
-        assert detail.error_summary == "请求超时"
+        assert detail.message.status == "pending"
+        assert detail.message.error_code == "model_timeout"
+        assert detail.message.error_summary == "请求超时"
         assert len(detail.events) == 0
 
     def test_source_text_preserved_after_failure(self, session: Session) -> None:
@@ -168,20 +168,20 @@ class TestClassifierFailure:
 
         detail = svc.submit(_submit_command(text=text), classifier)
 
-        assert detail.original_text == text
+        assert detail.message.original_text == text
 
     def test_retry_clears_failure_and_classifies(self, session: Session) -> None:
         fail_cls = failing_classifier()
         svc = MessageService(session)
         pending = svc.submit(_submit_command(), fail_cls)
-        assert pending.status == "pending"
+        assert pending.message.status == "pending"
 
         success_cls = make_interview_classifier(datetime(2026, 1, 15).date())
-        retried = svc.retry(pending.id, success_cls)
+        retried = svc.retry(pending.message.id, success_cls)
 
-        assert retried.status == "classified"
-        assert retried.error_code is None
-        assert retried.error_summary is None
+        assert retried.message.status == "classified"
+        assert retried.message.error_code is None
+        assert retried.message.error_summary is None
         assert len(retried.events) == 3
 
     def test_retry_on_nonexistent_message_raises(self, session: Session) -> None:
@@ -197,7 +197,7 @@ class TestClassifierFailure:
         detail = svc.submit(_submit_command(), classifier)
 
         with pytest.raises(ValueError, match="失败或处理中"):
-            svc.retry(detail.id, classifier)
+            svc.retry(detail.message.id, classifier)
 
 
 class TestEventPersistenceFailure:
@@ -222,10 +222,10 @@ class TestEventPersistenceFailure:
         cmd = _submit_command()
         detail = svc.submit(cmd, cls)
 
-        assert detail.status == "pending"
+        assert detail.message.status == "pending"
         count = (
             session.query(ActivityEvent)
-            .filter(ActivityEvent.source_message_id == detail.id)
+            .filter(ActivityEvent.source_message_id == detail.message.id)
             .count()
         )
         assert count == 0
@@ -337,17 +337,17 @@ class TestUndo:
 
         events_count = (
             session.query(ActivityEvent)
-            .filter(ActivityEvent.source_message_id == detail.id)
+            .filter(ActivityEvent.source_message_id == detail.message.id)
             .count()
         )
         assert events_count > 0
 
-        svc.undo(detail.id, datetime.now(UTC))
+        svc.undo(detail.message.id, datetime.now(UTC))
 
-        assert session.get(SourceMessage, detail.id) is None
+        assert session.get(SourceMessage, detail.message.id) is None
         remaining = (
             session.query(ActivityEvent)
-            .filter(ActivityEvent.source_message_id == detail.id)
+            .filter(ActivityEvent.source_message_id == detail.message.id)
             .count()
         )
         assert remaining == 0
@@ -368,7 +368,7 @@ class TestUndo:
         session.add(user_cat)
         session.commit()
 
-        svc.undo(detail.id, datetime.now(UTC))
+        svc.undo(detail.message.id, datetime.now(UTC))
 
         still_exists = session.get(Category, user_cat.id)
         assert still_exists is not None
@@ -383,7 +383,7 @@ class TestUndo:
         far_future = datetime.now(UTC) + timedelta(seconds=30)
 
         with pytest.raises(UndoWindowExpired):
-            svc.undo(detail.id, far_future)
+            svc.undo(detail.message.id, far_future)
 
     def test_undo_nonexistent_raises(self, session: Session) -> None:
         svc = MessageService(session)
@@ -396,7 +396,7 @@ class TestUndo:
         pending = svc.submit(_submit_command(), fail_cls)
 
         with pytest.raises(ValueError, match="已分类"):
-            svc.undo(pending.id, datetime.now(UTC))
+            svc.undo(pending.message.id, datetime.now(UTC))
 
 
 # ------------------------------------------------------------------
@@ -410,10 +410,10 @@ class TestGet:
         svc = MessageService(session)
         submitted = svc.submit(_submit_command(), classifier)
 
-        detail = svc.get(submitted.id)
+        detail = svc.get(submitted.message.id)
 
-        assert detail.id == submitted.id
-        assert detail.original_text == submitted.original_text
+        assert detail.message.id == submitted.message.id
+        assert detail.message.original_text == submitted.message.original_text
         assert len(detail.events) == 3
 
     def test_get_nonexistent_raises(self, session: Session) -> None:
@@ -433,11 +433,11 @@ class TestDeleteSource:
         svc = MessageService(session)
         detail = svc.submit(_submit_command(), classifier)
 
-        impact = svc.delete_source(detail.id)
+        impact = svc.delete_source(detail.message.id)
 
         assert impact.deleted_events == 3
-        assert impact.message_id == detail.id
-        assert session.get(SourceMessage, detail.id) is None
+        assert impact.message_id == detail.message.id
+        assert session.get(SourceMessage, detail.message.id) is None
 
     def test_delete_nonexistent_raises(self, session: Session) -> None:
         svc = MessageService(session)

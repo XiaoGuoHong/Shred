@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from shred.core.database import get_session
@@ -13,7 +14,12 @@ from shred.db.models import (
     SourceMessage,
     Tag,
 )
-from shred.timeline.schemas import TimelineEvent, TimelineGroup, TimelinePage
+from shred.timeline.schemas import (
+    TimelineEvent,
+    TimelineGroup,
+    TimelineMessage,
+    TimelinePage,
+)
 
 router = APIRouter()
 
@@ -42,6 +48,22 @@ def _get_tags(session: Session, event_id: str) -> list[str]:
     return [t.name for t in tags]
 
 
+def _build_timeline_event(session: Session, event: ActivityEvent) -> TimelineEvent:
+    return TimelineEvent(
+        id=event.id,
+        position=event.position,
+        title=event.title,
+        source_fragment=event.source_fragment,
+        occurred_at=event.occurred_at,
+        occurrence_precision=event.occurrence_precision,
+        part_of_day=event.part_of_day,
+        category_id=event.category_id,
+        category_path=_category_path(session, event.category_id),
+        tags=_get_tags(session, event.id),
+        status=event.status,
+    )
+
+
 @router.get("", response_model=TimelinePage)
 def get_timeline(
     page: int = Query(1, ge=1),
@@ -57,34 +79,26 @@ def get_timeline(
         event_query = event_query.filter(ActivityEvent.status == status)
 
     events: list[ActivityEvent] = event_query.all()
-
-    groups_map: dict[str, list[ActivityEvent]] = {}
+    events_by_source: dict[str, list[ActivityEvent]] = {}
     for event in events:
-        groups_map.setdefault(event.source_message_id, []).append(event)
+        events_by_source.setdefault(event.source_message_id, []).append(event)
+
+    source_query = session.query(SourceMessage)
+    if status is not None:
+        matching_source_ids = {e.source_message_id for e in events}
+        source_query = source_query.filter(
+            or_(
+                SourceMessage.status == status,
+                SourceMessage.id.in_(matching_source_ids),
+            )
+        )
+    sources: list[SourceMessage] = source_query.all()
 
     groups: list[tuple[object, TimelineGroup]] = []
-    for source_id, group_events in groups_map.items():
-        source = session.get(SourceMessage, source_id)
-        if source is None:
+    for source in sources:
+        group_events = events_by_source.get(source.id, [])
+        if category_id is not None and not group_events:
             continue
-
-        timeline_events: list[TimelineEvent] = []
-        for evt in group_events:
-            timeline_events.append(
-                TimelineEvent(
-                    id=evt.id,
-                    position=evt.position,
-                    title=evt.title,
-                    source_fragment=evt.source_fragment,
-                    occurred_at=evt.occurred_at,
-                    occurrence_precision=evt.occurrence_precision,
-                    part_of_day=evt.part_of_day,
-                    category_id=evt.category_id,
-                    category_path=_category_path(session, evt.category_id),
-                    tags=_get_tags(session, evt.id),
-                    status=evt.status,
-                )
-            )
 
         sort_key = max(
             (e.occurred_at for e in group_events if e.occurred_at is not None),
@@ -95,11 +109,20 @@ def get_timeline(
             (
                 sort_key,
                 TimelineGroup(
-                    source_message_id=source.id,
-                    original_text=source.original_text,
-                    submitted_at=source.submitted_at,
-                    timezone=source.timezone,
-                    events=sorted(timeline_events, key=lambda e: e.position),
+                    message=TimelineMessage(
+                        id=source.id,
+                        submission_uuid=source.submission_uuid,
+                        original_text=source.original_text,
+                        submitted_at=source.submitted_at,
+                        timezone=source.timezone,
+                        status=source.status,
+                        error_code=source.error_code,
+                        error_summary=source.error_summary,
+                    ),
+                    events=sorted(
+                        (_build_timeline_event(session, e) for e in group_events),
+                        key=lambda e: e.position,
+                    ),
                 ),
             )
         )
@@ -109,6 +132,6 @@ def get_timeline(
 
     start = (page - 1) * page_size
     end = start + page_size
-    page_items = [g[1] for g in groups[start:end]]
+    page_groups = [g[1] for g in groups[start:end]]
 
-    return TimelinePage(items=page_items, total=total, page=page, page_size=page_size)
+    return TimelinePage(groups=page_groups, total=total, page=page, page_size=page_size)

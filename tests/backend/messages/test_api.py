@@ -68,11 +68,11 @@ class TestSubmitAPI:
     def test_post_returns_201_for_classified(self, client: TestClient) -> None:
         r = client.post(
             "/api/messages",
-            json={"source_text": "上午预约下周一的面试", "timezone": "Asia/Shanghai"},
+            json={"text": "上午预约下周一的面试", "timezone": "Asia/Shanghai", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
         assert r.status_code == 201
         data = r.json()
-        assert data["status"] == "classified"
+        assert data["message"]["status"] == "classified"
         assert len(data["events"]) == 3
 
     def test_post_returns_201_for_pending(self, client: TestClient) -> None:
@@ -80,44 +80,46 @@ class TestSubmitAPI:
 
         r = client.post(
             "/api/messages",
-            json={"source_text": "测试", "timezone": "UTC"},
+            json={"text": "测试", "timezone": "UTC", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
         assert r.status_code == 201
         data = r.json()
-        assert data["status"] == "pending"
+        assert data["message"]["status"] == "pending"
 
     def test_post_with_custom_uuid(self, client: TestClient) -> None:
         r = client.post(
             "/api/messages",
             json={
-                "source_text": "测试",
+                "text": "测试",
+                "submitted_at": "2026-01-15T02:00:00+00:00",
                 "timezone": "UTC",
                 "submission_uuid": "custom-uuid-123",
             },
         )
         assert r.status_code == 201
-        assert r.json()["submission_uuid"] == "custom-uuid-123"
+        assert r.json()["message"]["submission_uuid"] == "custom-uuid-123"
 
     def test_post_idempotent_same_uuid(self, client: TestClient) -> None:
-        payload = {"source_text": "测试", "timezone": "UTC", "submission_uuid": "idem-test"}
+        payload = {"text": "测试",
+                "submitted_at": "2026-01-15T02:00:00+00:00", "timezone": "UTC", "submission_uuid": "idem-test"}
         first = client.post("/api/messages", json=payload)
         second = client.post("/api/messages", json=payload)
         assert first.status_code == 201
         assert second.status_code == 201
-        assert first.json()["id"] == second.json()["id"]
+        assert first.json()["message"]["id"] == second.json()["message"]["id"]
 
 
 class TestGetAPI:
     def test_get_returns_200(self, client: TestClient) -> None:
         r = client.post(
             "/api/messages",
-            json={"source_text": "测试", "timezone": "UTC"},
+            json={"text": "测试", "timezone": "UTC", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
-        msg_id = r.json()["id"]
+        msg_id = r.json()["message"]["id"]
 
         r = client.get(f"/api/messages/{msg_id}")
         assert r.status_code == 200
-        assert r.json()["id"] == msg_id
+        assert r.json()["message"]["id"] == msg_id
 
     def test_get_nonexistent_returns_404(self, client: TestClient) -> None:
         r = client.get("/api/messages/nonexistent")
@@ -130,10 +132,10 @@ class TestRetryAPI:
 
         r = client.post(
             "/api/messages",
-            json={"source_text": "上午预约下周一的面试", "timezone": "Asia/Shanghai"},
+            json={"text": "上午预约下周一的面试", "timezone": "Asia/Shanghai", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
-        assert r.json()["status"] == "pending"
-        msg_id = r.json()["id"]
+        assert r.json()["message"]["status"] == "pending"
+        msg_id = r.json()["message"]["id"]
 
         client.app.dependency_overrides[get_classifier] = lambda: make_interview_classifier(
             datetime(2026, 1, 15).date()
@@ -141,7 +143,7 @@ class TestRetryAPI:
 
         r = client.post(f"/api/messages/{msg_id}/retry")
         assert r.status_code == 200
-        assert r.json()["status"] == "classified"
+        assert r.json()["message"]["status"] == "classified"
         assert len(r.json()["events"]) == 3
 
     def test_retry_nonexistent_returns_404(self, client: TestClient) -> None:
@@ -153,9 +155,9 @@ class TestUndoAPI:
     def test_undo_returns_204_within_window(self, client: TestClient) -> None:
         r = client.post(
             "/api/messages",
-            json={"source_text": "测试", "timezone": "UTC"},
+            json={"text": "测试", "timezone": "UTC", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
-        msg_id = r.json()["id"]
+        msg_id = r.json()["message"]["id"]
 
         r = client.post(f"/api/messages/{msg_id}/undo")
         assert r.status_code == 204
@@ -169,9 +171,9 @@ class TestDeleteAPI:
     def test_delete_returns_204(self, client: TestClient) -> None:
         r = client.post(
             "/api/messages",
-            json={"source_text": "测试", "timezone": "UTC"},
+            json={"text": "测试", "timezone": "UTC", "submitted_at": "2026-01-15T02:00:00+00:00"},
         )
-        msg_id = r.json()["id"]
+        msg_id = r.json()["message"]["id"]
 
         r = client.delete(f"/api/messages/{msg_id}")
         assert r.status_code == 204

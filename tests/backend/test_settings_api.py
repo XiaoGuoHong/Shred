@@ -16,6 +16,7 @@ from shred.classification.contracts import (
     ClassifierFailure,
 )
 from shred.core import database as db_mod
+from shred.core.config import EnvSettings
 from shred.db.models import (
     ActivityEvent,
     Base,
@@ -209,3 +210,20 @@ class TestPreferences:
 
         post = client.get("/api/settings").json()
         assert post["preference_count"] == 0
+
+
+class TestEnvSettings:
+    def test_empty_api_key_env_is_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SHRED_OPENAI_API_KEY", "")
+        assert EnvSettings().openai_api_key is None
+
+    def test_blank_api_key_env_is_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SHRED_OPENAI_API_KEY", "   ")
+        assert EnvSettings().openai_api_key is None
+
+    def test_nonempty_api_key_env_is_preserved(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("SHRED_OPENAI_API_KEY", "sk-test")
+        assert EnvSettings().openai_api_key is not None
+        assert EnvSettings().openai_api_key.get_secret_value() == "sk-test"

@@ -27,6 +27,7 @@ from shred.messages.schemas import (
     DeleteImpact,
     EventDetail,
     MessageDetail,
+    MessageView,
     SubmitMessage,
 )
 from shred.taxonomy.names import normalize_tag_name
@@ -46,11 +47,15 @@ class MessageService:
         if existing is not None:
             return self._build_detail(existing)
 
+        submitted_at = command.submitted_at
+        if submitted_at.tzinfo is None:
+            submitted_at = submitted_at.replace(tzinfo=UTC)
+
         source = SourceMessage(
             id=str(uuid4()),
             submission_uuid=command.submission_uuid,
-            original_text=command.source_text,
-            submitted_at=datetime.now(UTC),
+            original_text=command.text,
+            submitted_at=submitted_at,
             timezone=command.timezone,
             status="processing",
         )
@@ -252,17 +257,19 @@ class MessageService:
             )
 
         return MessageDetail(
-            id=source.id,
-            submission_uuid=source.submission_uuid,
-            original_text=source.original_text,
-            submitted_at=source.submitted_at,
-            timezone=source.timezone,
-            status=source.status,
-            error_code=source.error_code,
-            error_summary=source.error_summary,
+            message=MessageView(
+                id=source.id,
+                submission_uuid=source.submission_uuid,
+                original_text=source.original_text,
+                submitted_at=source.submitted_at,
+                timezone=source.timezone,
+                status=source.status,
+                error_code=source.error_code,
+                error_summary=source.error_summary,
+                created_at=source.created_at,
+                updated_at=source.updated_at,
+            ),
             events=event_details,
-            created_at=source.created_at,
-            updated_at=source.updated_at,
         )
 
     def _build_classification_request(self, source: SourceMessage) -> ClassificationRequest:

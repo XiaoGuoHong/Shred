@@ -70,17 +70,43 @@ def test_inferred_precision_keeps_the_submission_instant_to_avoid_invented_histo
     assert resolved.part_of_day is None
 
 
-def test_future_occurrence_beyond_five_minutes_is_rejected_to_prevent_future_event_fabrication() -> None:
+def test_future_date_occurrence_is_rejected_to_prevent_future_event_fabrication() -> None:
     with pytest.raises(TimeResolutionError):
         resolve_occurrence(
             _draft(
-                local_date=date(2026, 8, 10),
+                local_date=date(2026, 8, 11),
                 precision="part_of_day",
                 part_of_day="morning",
             ),
             submitted_at=datetime(2026, 8, 10, tzinfo=UTC),
             timezone="Asia/Shanghai",
         )
+
+
+def test_exact_future_time_is_rejected() -> None:
+    with pytest.raises(TimeResolutionError):
+        resolve_occurrence(
+            _draft(
+                local_date=date(2026, 8, 10),
+                precision="exact",
+                local_time=time(15, 0),
+            ),
+            submitted_at=datetime(2026, 8, 10, tzinfo=UTC),
+            timezone="Asia/Shanghai",
+        )
+
+
+def test_same_day_anchor_precision_does_not_raise() -> None:
+    resolved = resolve_occurrence(
+        _draft(
+            local_date=date(2026, 8, 10),
+            precision="part_of_day",
+            part_of_day="noon",
+        ),
+        submitted_at=datetime(2026, 8, 10, 2, 0, tzinfo=UTC),
+        timezone="Asia/Shanghai",
+    )
+    assert resolved.occurred_at == datetime(2026, 8, 10, 4, 0, tzinfo=UTC)
 
 
 def test_invalid_iana_timezone_is_rejected_to_prevent_silent_local_time_misinterpretation() -> None:
