@@ -40,6 +40,10 @@ test.describe("Shred PWA end-to-end", () => {
   });
 
   test("submits text and shows result cards", async ({ page }) => {
+    const baseTime = new Date();
+    baseTime.setHours(10, 0, 0, 0);
+    const at = (minutes: number) =>
+      new Date(baseTime.getTime() + minutes * 60_000).toISOString();
     await page.route("**/api/messages", async (route) => {
       const submissionUuid =
         route.request().postDataJSON()?.submission_uuid ?? crypto.randomUUID();
@@ -61,11 +65,11 @@ test.describe("Shred PWA end-to-end", () => {
               position: 0,
               title: "吃饭",
               source_fragment: "饭吃了",
-              occurred_at: new Date().toISOString(),
+              occurred_at: at(0),
               occurrence_precision: "exact",
               part_of_day: "noon",
               category_id: "cat-1",
-              category_path: "工作",
+              category_path: ['工作'],
               tags: [],
               status: "classified",
             },
@@ -75,7 +79,7 @@ test.describe("Shred PWA end-to-end", () => {
               position: 1,
               title: "取快递",
               source_fragment: "快递取了",
-              occurred_at: new Date().toISOString(),
+              occurred_at: at(5),
               occurrence_precision: "date",
               part_of_day: "afternoon",
               category_id: null,
@@ -89,7 +93,7 @@ test.describe("Shred PWA end-to-end", () => {
               position: 2,
               title: "回复邮件",
               source_fragment: "邮件回了",
-              occurred_at: new Date().toISOString(),
+              occurred_at: at(10),
               occurrence_precision: "date",
               part_of_day: "afternoon",
               category_id: null,
@@ -122,14 +126,19 @@ test.describe("Shred PWA end-to-end", () => {
     const eventCards = page.locator(".event-card");
     await expect(eventCards).toHaveCount(3);
 
-    await expect(eventCards.nth(0)).toContainText("吃饭");
+    // Events render newest-first within the day.
+    await expect(eventCards.nth(0)).toContainText("回复邮件");
     await expect(eventCards.nth(1)).toContainText("取快递");
-    await expect(eventCards.nth(2)).toContainText("回复邮件");
+    await expect(eventCards.nth(2)).toContainText("吃饭");
   });
 
   test("edits event category and filters by sidebar", async ({ page }) => {
     const msgId = crypto.randomUUID();
     const evtId = crypto.randomUUID();
+    const baseTime = new Date();
+    baseTime.setHours(10, 0, 0, 0);
+    const at = (minutes: number) =>
+      new Date(baseTime.getTime() + minutes * 60_000).toISOString();
 
     await page.route("**/api/messages", async (route) => {
       const submissionUuid =
@@ -152,11 +161,11 @@ test.describe("Shred PWA end-to-end", () => {
               position: 0,
               title: "吃饭",
               source_fragment: "饭吃了",
-              occurred_at: new Date().toISOString(),
+              occurred_at: at(5),
               occurrence_precision: "exact",
               part_of_day: "noon",
               category_id: "cat-1",
-              category_path: "工作",
+              category_path: ['工作'],
               tags: [],
               status: "classified",
             },
@@ -166,7 +175,7 @@ test.describe("Shred PWA end-to-end", () => {
               position: 1,
               title: "回复邮件",
               source_fragment: "邮件回了",
-              occurred_at: new Date().toISOString(),
+              occurred_at: at(0),
               occurrence_precision: "date",
               part_of_day: "afternoon",
               category_id: null,
@@ -193,7 +202,7 @@ test.describe("Shred PWA end-to-end", () => {
             occurrence_precision: "date",
             part_of_day: "afternoon",
             category_id: "cat-work-talk",
-            category_path: "工作 / 沟通",
+            category_path: ['工作', '沟通'],
             tags: [],
             status: "classified",
           }),
@@ -230,7 +239,7 @@ test.describe("Shred PWA end-to-end", () => {
                     occurrence_precision: "date",
                     part_of_day: "afternoon",
                     category_id: "cat-work-talk",
-                    category_path: "工作 / 沟通",
+                    category_path: ['工作', '沟通'],
                     tags: [],
                     status: "classified",
                   },
@@ -295,10 +304,9 @@ test.describe("Shred PWA end-to-end", () => {
 
     await expect(page.locator(".event-card")).toHaveCount(2);
 
-    const secondCardEdit = page
-      .locator(".event-card")
-      .nth(1)
-      .locator(".event-card-action:not(.event-card-action-delete)");
+    const secondCard = page.locator(".event-card").nth(1);
+    await secondCard.locator(".event-card-more").click();
+    const secondCardEdit = secondCard.getByRole("button", { name: "编辑" });
     await secondCardEdit.click();
 
     await expect(page.locator(".event-editor-panel")).toBeVisible();
@@ -369,7 +377,7 @@ test.describe("Shred PWA end-to-end", () => {
               occurrence_precision: "date",
               part_of_day: "morning",
               category_id: "cat-1",
-              category_path: "工作",
+              category_path: ['工作'],
               tags: [],
               status: "classified",
             },
@@ -417,7 +425,7 @@ test.describe("Shred PWA end-to-end", () => {
                   occurrence_precision: "date",
                   part_of_day: "morning",
                   category_id: "cat-1",
-                  category_path: "工作",
+                  category_path: ['工作'],
                   tags: [],
                   status: "classified",
                 },
