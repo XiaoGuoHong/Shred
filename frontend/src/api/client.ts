@@ -8,6 +8,7 @@ import type {
   TimelineParams,
   DeleteImpact,
   SettingsConfig,
+  TestConnectionResult,
 } from "@/api/types";
 
 const BASE = "/api";
@@ -158,9 +159,8 @@ export const api = {
   },
 
   async updateSettings(data: {
-    base_url?: string;
-    model?: string;
-    lan_listen?: boolean;
+    api_base_url?: string;
+    model_name?: string;
   }): Promise<SettingsConfig> {
     return request<SettingsConfig>(`${BASE}/settings`, {
       method: "PATCH",
@@ -169,11 +169,10 @@ export const api = {
     });
   },
 
-  async testConnection(): Promise<{ status: string; message?: string }> {
-    return request<{ status: string; message?: string }>(
-      `${BASE}/settings/test-connection`,
-      { method: "POST" },
-    );
+  async testConnection(): Promise<TestConnectionResult> {
+    return request<TestConnectionResult>(`${BASE}/settings/test-connection`, {
+      method: "POST",
+    });
   },
 
   async clearPreferences(): Promise<void> {

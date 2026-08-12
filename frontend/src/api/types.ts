@@ -83,3 +83,16 @@ export interface DeleteImpact {
   child_count: number;
   event_count: number;
 }
+
+export interface SettingsConfig {
+  api_base_url: string;
+  model_name: string;
+  api_key_configured: boolean;
+  preference_count: number;
+}
+
+export interface TestConnectionResult {
+  ok: boolean;
+  error_code?: string | null;
+  error_message?: string | null;
+}

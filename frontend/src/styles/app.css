@@ -856,3 +856,198 @@ ul {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 }
+
+/* Settings Page */
+.settings-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+.settings-loading,
+.settings-error {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-text-muted);
+}
+
+.settings-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.settings-section {
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.settings-input {
+  padding: 8px 12px;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.settings-status {
+  font-size: var(--font-size-base);
+}
+
+.settings-status-ok {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.settings-status-missing {
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+.settings-value {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.settings-privacy-notice {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  padding: 10px 12px;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-accent);
+}
+
+.settings-lan-warning {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  padding: 10px 12px;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-warning);
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-btn-primary {
+  background-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.settings-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.settings-btn-outline {
+  background-color: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+.settings-btn-outline:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+}
+
+.settings-btn-danger {
+  background-color: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+.settings-btn-danger:hover:not(:disabled) {
+  background-color: rgba(224, 96, 112, 0.1);
+}
+
+.settings-error-msg {
+  padding: 8px 12px;
+  background-color: rgba(224, 96, 112, 0.1);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+.settings-success-msg {
+  padding: 8px 12px;
+  background-color: rgba(76, 175, 132, 0.1);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
+
+.settings-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: 4px 0;
+}
+
+.settings-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-confirm-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}

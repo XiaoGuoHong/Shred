@@ -71,7 +71,7 @@ describe("api.submitMessage", () => {
 
     expect(error).toBeDefined();
     expect(error!.name).toBe("ApiClientError");
-    expect((error as { code: string }).code).toBe("validation_error");
+    expect((error as unknown as { code: string }).code).toBe("validation_error");
     expect(error!.message).toBe("Invalid input");
   });
 
@@ -92,6 +92,6 @@ describe("api.submitMessage", () => {
 
     expect(error).toBeDefined();
     expect(error!.name).toBe("ApiClientError");
-    expect((error as { code: string }).code).toBe("unexpected_response");
+    expect((error as unknown as { code: string }).code).toBe("unexpected_response");
   });
 });

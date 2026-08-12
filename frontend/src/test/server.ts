@@ -7,7 +7,15 @@ import type {
   MessageDetail,
   SourceMessage,
   ActivityEvent,
+  SettingsConfig,
 } from "@/api/types";
+
+const sampleSettings: SettingsConfig = {
+  api_base_url: "https://api.openai.com/v1",
+  model_name: "gpt-4o",
+  api_key_configured: true,
+  preference_count: 3,
+};
 
 const sampleCategories: CategoryNode[] = [
   {
@@ -382,5 +390,38 @@ export const server = setupServer(
 
   http.delete("/api/categories/:id", () => {
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/settings", () => {
+    return HttpResponse.json(sampleSettings);
+  }),
+
+  http.patch("/api/settings", async ({ request }) => {
+    const body = (await request.json()) as Partial<SettingsConfig>;
+    return HttpResponse.json({ ...sampleSettings, ...body });
+  }),
+
+  http.post("/api/settings/test-connection", () => {
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.delete("/api/preferences", async ({ request }) => {
+    const body = (await request.json()) as { confirm?: boolean };
+    if (!body.confirm) {
+      return HttpResponse.json(
+        { error: { code: "confirmation_required", message: "需要确认操作" } },
+        { status: 400 },
+      );
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/export", () => {
+    return new HttpResponse('{"data":"exported"}', {
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Disposition": 'attachment; filename="shred-export.json"',
+      },
+    });
   }),
 );
