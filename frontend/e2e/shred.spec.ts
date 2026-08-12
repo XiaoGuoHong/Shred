@@ -40,14 +40,15 @@ test.describe("Shred PWA end-to-end", () => {
   });
 
   test("submits text and shows result cards", async ({ page }) => {
-    const msgId = crypto.randomUUID();
     await page.route("**/api/messages", async (route) => {
+      const submissionUuid =
+        route.request().postDataJSON()?.submission_uuid ?? crypto.randomUUID();
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           message: {
-            id: msgId,
-            submission_uuid: msgId,
+            id: submissionUuid,
+            submission_uuid: submissionUuid,
             original_text: "饭吃了，快递取了，邮件回了。",
             submitted_at: new Date().toISOString(),
             timezone: "Asia/Shanghai",
@@ -56,7 +57,7 @@ test.describe("Shred PWA end-to-end", () => {
           events: [
             {
               id: crypto.randomUUID(),
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 0,
               title: "吃饭",
               source_fragment: "饭吃了",
@@ -70,7 +71,7 @@ test.describe("Shred PWA end-to-end", () => {
             },
             {
               id: crypto.randomUUID(),
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 1,
               title: "取快递",
               source_fragment: "快递取了",
@@ -84,7 +85,7 @@ test.describe("Shred PWA end-to-end", () => {
             },
             {
               id: crypto.randomUUID(),
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 2,
               title: "回复邮件",
               source_fragment: "邮件回了",
@@ -131,12 +132,14 @@ test.describe("Shred PWA end-to-end", () => {
     const evtId = crypto.randomUUID();
 
     await page.route("**/api/messages", async (route) => {
+      const submissionUuid =
+        route.request().postDataJSON()?.submission_uuid ?? crypto.randomUUID();
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           message: {
-            id: msgId,
-            submission_uuid: msgId,
+            id: submissionUuid,
+            submission_uuid: submissionUuid,
             original_text: "饭吃了，快递取了，邮件回了。",
             submitted_at: new Date().toISOString(),
             timezone: "Asia/Shanghai",
@@ -145,7 +148,7 @@ test.describe("Shred PWA end-to-end", () => {
           events: [
             {
               id: crypto.randomUUID(),
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 0,
               title: "吃饭",
               source_fragment: "饭吃了",
@@ -159,7 +162,7 @@ test.describe("Shred PWA end-to-end", () => {
             },
             {
               id: evtId,
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 1,
               title: "回复邮件",
               source_fragment: "邮件回了",
@@ -243,35 +246,8 @@ test.describe("Shred PWA end-to-end", () => {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
-          groups: [
-            {
-              message: {
-                id: msgId,
-                submission_uuid: msgId,
-                original_text: "饭吃了，快递取了，邮件回了。",
-                submitted_at: new Date().toISOString(),
-                timezone: "Asia/Shanghai",
-                status: "classified",
-              },
-              events: [
-                {
-                  id: evtId,
-                  source_message_id: msgId,
-                  position: 1,
-                  title: "回复邮件",
-                  source_fragment: "邮件回了",
-                  occurred_at: new Date().toISOString(),
-                  occurrence_precision: "date",
-                  part_of_day: "afternoon",
-                  category_id: null,
-                  category_path: null,
-                  tags: [],
-                  status: "classified",
-                },
-              ],
-            },
-          ],
-          total: 1,
+          groups: [],
+          total: 0,
           page: 1,
           page_size: 50,
         }),
@@ -279,32 +255,6 @@ test.describe("Shred PWA end-to-end", () => {
     });
 
     await page.route("**/api/categories", async (route) => {
-      const requestUrl = route.request().url();
-      if (requestUrl.includes("cat-work-talk")) {
-        return route.fulfill({
-          contentType: "application/json",
-          json: [
-            {
-              id: "cat-1",
-              name: "工作",
-              normalized_name: "工作",
-              children: [
-                {
-                  id: "cat-work-talk",
-                  name: "沟通",
-                  normalized_name: "沟通",
-                  parent_id: "cat-1",
-                  children: [],
-                  event_count: 1,
-                  total_event_count: 1,
-                },
-              ],
-              event_count: 1,
-              total_event_count: 2,
-            },
-          ],
-        });
-      }
       return route.fulfill({
         contentType: "application/json",
         json: [
@@ -312,9 +262,19 @@ test.describe("Shred PWA end-to-end", () => {
             id: "cat-1",
             name: "工作",
             normalized_name: "工作",
-            children: [],
-            event_count: 5,
-            total_event_count: 5,
+            children: [
+              {
+                id: "cat-work-talk",
+                name: "沟通",
+                normalized_name: "沟通",
+                parent_id: "cat-1",
+                children: [],
+                event_count: 1,
+                total_event_count: 1,
+              },
+            ],
+            event_count: 1,
+            total_event_count: 2,
           },
         ],
       });
@@ -335,7 +295,10 @@ test.describe("Shred PWA end-to-end", () => {
 
     await expect(page.locator(".event-card")).toHaveCount(2);
 
-    const secondCardEdit = page.locator(".event-card").nth(1).locator(".event-card-action");
+    const secondCardEdit = page
+      .locator(".event-card")
+      .nth(1)
+      .locator(".event-card-action:not(.event-card-action-delete)");
     await secondCardEdit.click();
 
     await expect(page.locator(".event-editor-panel")).toBeVisible();
@@ -348,11 +311,13 @@ test.describe("Shred PWA end-to-end", () => {
       page.locator(".event-editor-save").click(),
     ]);
 
-    const workCategory = page.locator(".category-tree-root-item");
-    await workCategory.click();
+    const workCategoryToggle = page.locator(
+      ".category-tree-root-item .category-tree-toggle",
+    );
+    await workCategoryToggle.click();
 
     const talkCategory = page.locator(".category-tree-child-item").first();
-    await talkCategory.click({ force: true });
+    await talkCategory.click();
 
     await expect(page.locator(".event-card")).toHaveCount(1);
     await expect(page.locator(".event-card-title")).toContainText("回复邮件");
@@ -363,14 +328,16 @@ test.describe("Shred PWA end-to-end", () => {
     let submitAttempts = 0;
 
     await page.route("**/api/messages", async (route) => {
+      const submissionUuid =
+        route.request().postDataJSON()?.submission_uuid ?? crypto.randomUUID();
       if (route.request().method() === "POST" && submitAttempts === 0) {
         submitAttempts++;
         return route.fulfill({
           contentType: "application/json",
           body: JSON.stringify({
             message: {
-              id: msgId,
-              submission_uuid: msgId,
+              id: submissionUuid,
+              submission_uuid: submissionUuid,
               original_text: "另一条待处理的消息",
               submitted_at: new Date().toISOString(),
               timezone: "Asia/Shanghai",
@@ -384,8 +351,8 @@ test.describe("Shred PWA end-to-end", () => {
         contentType: "application/json",
         body: JSON.stringify({
           message: {
-            id: msgId,
-            submission_uuid: msgId,
+            id: submissionUuid,
+            submission_uuid: submissionUuid,
             original_text: "另一条待处理的消息",
             submitted_at: new Date().toISOString(),
             timezone: "Asia/Shanghai",
@@ -394,7 +361,7 @@ test.describe("Shred PWA end-to-end", () => {
           events: [
             {
               id: crypto.randomUUID(),
-              source_message_id: msgId,
+              source_message_id: submissionUuid,
               position: 0,
               title: "待处理事项",
               source_fragment: "另一条待处理的消息",
@@ -411,7 +378,7 @@ test.describe("Shred PWA end-to-end", () => {
       });
     });
 
-    await page.route(`**/api/messages/${msgId}/retry`, async (route) => {
+    await page.route("**/api/messages/*/retry", async (route) => {
       return route.fulfill({
         contentType: "application/json",
         json: { status: "classified" },
