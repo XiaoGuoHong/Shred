@@ -142,10 +142,10 @@ describe("TimelinePage", () => {
     renderTimeline();
 
     const textarea = screen.getByPlaceholderText("输入需要整理的内容...");
-    act(() => {
+    await act(async () => {
       fireEvent.change(textarea, { target: { value: "测试撤销功能" } });
     });
-    act(() => {
+    await act(async () => {
       fireEvent.click(screen.getByText("提交"));
     });
 
@@ -188,10 +188,10 @@ describe("TimelinePage", () => {
     renderTimeline();
 
     const textarea = screen.getByPlaceholderText("输入需要整理的内容...");
-    act(() => {
+    await act(async () => {
       fireEvent.change(textarea, { target: { value: "测试过期撤销" } });
     });
-    act(() => {
+    await act(async () => {
       fireEvent.click(screen.getByText("提交"));
     });
 
