@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { TimelineGroup } from "@/api/types";
 import { EventCard } from "@/features/timeline/EventCard";
-import { PendingSource } from "@/features/events/PendingCard";
+import { PendingEvent, PendingSource } from "@/features/events/PendingCard";
 
 export function MessageGroup({
   group,
@@ -87,6 +87,9 @@ export function MessageGroup({
       <div className="message-group-events">
         {classifiedEvents.map((event) => (
           <EventCard key={event.id} event={event} />
+        ))}
+        {pendingEvents.map((event) => (
+          <PendingEvent key={event.id} event={event} />
         ))}
       </div>
     </div>

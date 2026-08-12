@@ -143,7 +143,9 @@ export const api = {
   },
 
   async getDeleteImpact(id: string): Promise<DeleteImpact> {
-    return request<DeleteImpact>(`${BASE}/categories/${id}/impact`);
+    return request<DeleteImpact>(`${BASE}/categories/${id}/delete-impact`, {
+      method: "POST",
+    });
   },
 
   async deleteCategory(id: string): Promise<void> {

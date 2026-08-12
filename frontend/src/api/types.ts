@@ -80,8 +80,8 @@ export interface TimelineParams {
 export interface DeleteImpact {
   category_id: string;
   category_name: string;
-  child_count: number;
-  event_count: number;
+  descendant_count: number;
+  affected_event_count: number;
 }
 
 export interface SettingsConfig {

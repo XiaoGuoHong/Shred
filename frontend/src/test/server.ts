@@ -379,12 +379,12 @@ export const server = setupServer(
     return new HttpResponse(null, { status: 204 });
   }),
 
-  http.get("/api/categories/:id/impact", ({ params }) => {
+  http.post("/api/categories/:id/delete-impact", ({ params }) => {
     return HttpResponse.json({
       category_id: params.id,
       category_name: "测试分类",
-      child_count: 2,
-      event_count: 5,
+      descendant_count: 2,
+      affected_event_count: 5,
     });
   }),
 

@@ -77,10 +77,10 @@ export function DeleteCategoryDialog({
           {impact && (
             <div className="delete-impact">
               <p>
-                该分类下有 <strong>{impact.child_count}</strong> 个子分类
+                该分类下有 <strong>{impact.descendant_count}</strong> 个子分类
               </p>
               <p>
-                关联了 <strong>{impact.event_count}</strong> 个活动记录
+                关联了 <strong>{impact.affected_event_count}</strong> 个活动记录
               </p>
             </div>
           )}
