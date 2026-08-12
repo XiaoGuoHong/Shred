@@ -15,7 +15,7 @@ const sampleEvent: ActivityEvent = {
   occurrence_precision: "exact",
   part_of_day: "morning",
   category_id: "cat-2",
-  category_path: "工作 / 会议",
+  category_path: ['工作', '会议'],
   tags: ["会议", "项目"],
   status: "classified",
 };

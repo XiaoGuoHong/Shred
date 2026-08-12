@@ -5,6 +5,12 @@ import type { TimelineGroup } from "@/api/types";
 import { EventCard } from "@/features/timeline/EventCard";
 import { PendingEvent, PendingSource } from "@/features/events/PendingCard";
 
+function byTimeDesc(a: { occurred_at: string }, b: { occurred_at: string }) {
+  return (
+    new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+  );
+}
+
 export function MessageGroup({
   group,
   canUndo,
@@ -35,8 +41,13 @@ export function MessageGroup({
     },
   });
 
-  const classifiedEvents = events.filter((e) => e.status !== "pending" && e.status !== "error");
-  const pendingEvents = events.filter((e) => e.status === "pending" || e.status === "error");
+  const sortedEvents = [...events].sort(byTimeDesc);
+  const classifiedEvents = sortedEvents.filter(
+    (e) => e.status !== "pending" && e.status !== "error",
+  );
+  const pendingEvents = sortedEvents.filter(
+    (e) => e.status === "pending" || e.status === "error",
+  );
 
   if (isError || isPending) {
     return (
@@ -55,6 +66,7 @@ export function MessageGroup({
 
   return (
     <div className="message-group">
+      <span className="message-group-dot" aria-hidden="true" />
       <div className="message-group-header">
         <p className="message-group-text">{message.original_text}</p>
         <div className="message-group-actions">

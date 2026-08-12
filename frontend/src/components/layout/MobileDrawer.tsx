@@ -1,6 +1,14 @@
 import { useEffect, useRef } from "react";
 import type { ViewSelection } from "@/api/types";
 import { CategoryTree } from "@/features/categories/CategoryTree";
+import { Icon, type IconName } from "@/components/icons";
+
+const DRAWER_NAV: { label: string; view: ViewSelection; kind: string; icon: IconName }[] = [
+  { label: "全部记录", view: { kind: "all" }, kind: "all", icon: "list" },
+  { label: "待分类", view: { kind: "pending" }, kind: "pending", icon: "clock" },
+  { label: "分类管理", view: { kind: "manage-categories" }, kind: "manage-categories", icon: "folder" },
+  { label: "设置", view: { kind: "settings" }, kind: "settings", icon: "settings" },
+];
 
 export function MobileDrawer({
   open,
@@ -44,39 +52,34 @@ export function MobileDrawer({
     <div className="mobile-drawer-overlay">
       <div ref={drawerRef} className="mobile-drawer">
         <div className="mobile-drawer-header">
+          <span className="sidebar-brand-mark">
+            <Icon name="shredMark" size={22} />
+          </span>
           <span className="mobile-drawer-title">Shred</span>
           <button
             className="mobile-drawer-close"
             onClick={onClose}
             aria-label="关闭菜单"
           >
-            ✕
+            <Icon name="x" size={18} />
           </button>
         </div>
         <nav>
           <ul className="mobile-drawer-nav">
-            <li>
-              <button
-                className={`mobile-drawer-nav-item${view.kind === "all" ? " active" : ""}`}
-                onClick={() => {
-                  onViewChange({ kind: "all" });
-                  onClose();
-                }}
-              >
-                全部记录
-              </button>
-            </li>
-            <li>
-              <button
-                className={`mobile-drawer-nav-item${view.kind === "pending" ? " active" : ""}`}
-                onClick={() => {
-                  onViewChange({ kind: "pending" });
-                  onClose();
-                }}
-              >
-                待分类
-              </button>
-            </li>
+            {DRAWER_NAV.map((item) => (
+              <li key={item.kind}>
+                <button
+                  className={`mobile-drawer-nav-item${view.kind === item.kind ? " active" : ""}`}
+                  onClick={() => {
+                    onViewChange(item.view);
+                    onClose();
+                  }}
+                >
+                  <Icon name={item.icon} size={17} className="sidebar-nav-icon" />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
           </ul>
           <CategoryTree
             onSelect={onViewChange}
@@ -85,30 +88,6 @@ export function MobileDrawer({
             }
             onClose={onClose}
           />
-          <ul className="mobile-drawer-nav">
-            <li>
-              <button
-                className={`mobile-drawer-nav-item${view.kind === "manage-categories" ? " active" : ""}`}
-                onClick={() => {
-                  onViewChange({ kind: "manage-categories" });
-                  onClose();
-                }}
-              >
-                分类管理
-              </button>
-            </li>
-            <li>
-              <button
-                className={`mobile-drawer-nav-item${view.kind === "settings" ? " active" : ""}`}
-                onClick={() => {
-                  onViewChange({ kind: "settings" });
-                  onClose();
-                }}
-              >
-                设置
-              </button>
-            </li>
-          </ul>
         </nav>
       </div>
     </div>

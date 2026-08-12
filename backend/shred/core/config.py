@@ -11,6 +11,9 @@ class EnvSettings(BaseSettings):
     api_base_url: str = "https://api.openai.com/v1"
     model: str = ""
     model_timeout_seconds: int = 60
+    bind_address: str = "127.0.0.1"
+    port: int = 8000
+    data_dir: str = "./data"
 
     model_config = SettingsConfigDict(env_prefix="SHRED_", env_file=".env")
 

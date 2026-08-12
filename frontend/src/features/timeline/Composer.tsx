@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildSubmissionInput } from "@/api/client";
 import type { TimelineGroup, TimelinePage, SubmitMessageInput } from "@/api/types";
 import { usePersistentDraft } from "@/hooks/usePersistentDraft";
+import { Icon } from "@/components/icons";
 
 export function Composer({
   onSubmitted,
@@ -95,16 +96,25 @@ export function Composer({
         onKeyDown={handleKeyDown}
         placeholder="输入需要整理的内容..."
         disabled={mutation.isPending}
-        rows={4}
+        rows={3}
       />
       <div className="composer-footer">
-        <span className="composer-hint">Ctrl+Enter 提交</span>
+        <span className="composer-hint">
+          <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 提交
+        </span>
         <button
           className="composer-submit"
           onClick={handleSubmit}
           disabled={mutation.isPending || trim.length === 0}
         >
-          {mutation.isPending ? "处理中..." : "提交"}
+          {mutation.isPending ? (
+            <span className="composer-submit-label">处理中...</span>
+          ) : (
+            <>
+              <span className="composer-submit-label">提交</span>
+              <Icon name="send" size={15} />
+            </>
+          )}
         </button>
       </div>
     </div>

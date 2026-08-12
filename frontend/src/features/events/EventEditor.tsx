@@ -8,6 +8,7 @@ interface EventEditorProps {
   onClose: () => void;
   onReclassify?: (eventId: string) => void;
   showReclassify?: boolean;
+  focusCategory?: boolean;
 }
 
 function flattenCategories(nodes: CategoryNode[], depth = 0): { id: string; name: string; depth: number }[] {
@@ -42,7 +43,13 @@ function toLocalDatetimeString(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EventEditor({ event, onClose, onReclassify, showReclassify }: EventEditorProps) {
+export function EventEditor({
+  event,
+  onClose,
+  onReclassify,
+  showReclassify,
+  focusCategory,
+}: EventEditorProps) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +73,12 @@ export function EventEditor({ event, onClose, onReclassify, showReclassify }: Ev
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (focusCategory) {
+      document.getElementById("evt-category")?.focus();
+    }
+  }, [focusCategory]);
 
   function buildPatch() {
     const patch: Record<string, unknown> = {};

@@ -26,7 +26,7 @@ export interface ActivityEvent {
   occurrence_precision: string;
   part_of_day: string;
   category_id?: string;
-  category_path?: string;
+  category_path?: string[];
   tags: string[];
   status: string;
 }

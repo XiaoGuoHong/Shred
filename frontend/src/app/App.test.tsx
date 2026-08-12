@@ -32,10 +32,10 @@ describe("App", () => {
   it("marks the active navigation item", () => {
     renderApp();
 
-    const allButton = screen.getByText("全部记录");
+    const allButton = screen.getByRole("button", { name: "全部记录" });
     expect(allButton).toHaveClass("active");
 
-    const pendingButton = screen.getByText("待分类");
+    const pendingButton = screen.getByRole("button", { name: "待分类" });
     expect(pendingButton).not.toHaveClass("active");
   });
 });
