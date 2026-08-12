@@ -19,7 +19,8 @@ FROM python:3.12-slim AS backend-builder
 WORKDIR /build
 COPY pyproject.toml ./
 COPY backend ./backend
-RUN pip install --no-cache-dir .
+ARG PIP_INDEX_URL=https://pypi.org/simple
+RUN pip install --no-cache-dir --index-url ${PIP_INDEX_URL} .
 
 
 FROM python:3.12-slim AS runtime
