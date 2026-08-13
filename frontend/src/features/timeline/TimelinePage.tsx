@@ -42,7 +42,13 @@ interface DayGroup {
   groups: TimelineGroup[];
 }
 
-export function TimelinePage({ view }: { view: ViewSelection }) {
+export function TimelinePage({
+  view,
+  onViewChange,
+}: {
+  view: ViewSelection;
+  onViewChange: (v: ViewSelection) => void;
+}) {
   const [page, setPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [recentlyClassified, setRecentlyClassified] = useState<Set<string>>(
@@ -144,7 +150,7 @@ export function TimelinePage({ view }: { view: ViewSelection }) {
   }, []);
 
   const showComposer = view.kind === "all" || view.kind === "pending";
-  const showDateStrip = view.kind === "all";
+  const showDateStrip = view.kind === "all" || view.kind === "category";
   const today = startOfDay(new Date());
 
   return (
@@ -152,7 +158,6 @@ export function TimelinePage({ view }: { view: ViewSelection }) {
       {!isBackendReachable && (
         <div className="timeline-offline-banner">本地服务不可用</div>
       )}
-      {showComposer && <Composer onSubmitted={handleSubmitted} />}
       {showDateStrip && (
         <DateStrip
           selected={selectedDate}
@@ -205,6 +210,11 @@ export function TimelinePage({ view }: { view: ViewSelection }) {
         >
           加载更多
         </button>
+      )}
+      {showComposer && (
+        <div className="composer-anchor">
+          <Composer onSubmitted={handleSubmitted} />
+        </div>
       )}
     </div>
   );

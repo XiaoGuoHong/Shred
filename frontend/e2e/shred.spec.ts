@@ -311,12 +311,16 @@ test.describe("Shred PWA end-to-end", () => {
       page.locator(".event-editor-save").click(),
     ]);
 
-    const workCategoryToggle = page.locator(
-      ".category-tree-root-item .category-tree-toggle",
-    );
-    await workCategoryToggle.click();
-
-    const talkCategory = page.locator(".category-tree-child-item").first();
+    // Open the category dropdown in the top nav, expand 工作 and pick 沟通.
+    await page.getByRole("button", { name: "分类", exact: true }).click();
+    await page
+      .locator(".category-tree-root-item")
+      .filter({ hasText: "工作" })
+      .locator(".category-tree-toggle")
+      .click();
+    const talkCategory = page
+      .locator(".category-tree-child-item")
+      .filter({ hasText: "沟通" });
     await talkCategory.click();
 
     await expect(page.locator(".event-card")).toHaveCount(1);

@@ -28,7 +28,7 @@ function renderTimeline(view: ViewSelection = { kind: "all" }) {
   const Wrapper = createWrapper();
   return render(
     <Wrapper>
-      <TimelinePage view={view} />
+      <TimelinePage view={view} onViewChange={vi.fn()} />
     </Wrapper>,
   );
 }

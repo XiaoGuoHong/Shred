@@ -15,7 +15,7 @@ export function App() {
       ) : view.kind === "settings" ? (
         <SettingsPage />
       ) : (
-        <TimelinePage view={view} />
+        <TimelinePage view={view} onViewChange={setView} />
       )}
     </AppShell>
   );

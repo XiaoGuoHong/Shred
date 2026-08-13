@@ -1,143 +1,147 @@
+<div align="center">
+
 # Shred
 
-智能资料管理与分类工具 — 将零散的中文笔记、日记和备忘自动转化为结构化活动记录。
+**把零散的中文记录，变成一眼可回看的时间线。**
 
-Shred helps you turn scattered Chinese notes, journals, and memos into structured activity records automatically using an LLM-compatible API.
+用自然语言记下你做过的事，Shred 借助 LLM 自动拆分原子事件、解析时间、归类整理——像 macOS 生产力工具一样，安静地帮你回顾每一天。
 
-## 前提条件 / Prerequisites
+![license](https://img.shields.io/badge/license-MIT-blue)
+![version](https://img.shields.io/badge/version-0.1.0-5b5cf6)
+![platform](https://img.shields.io/badge/platform-Web%20%2F%20PWA-5b5cf6)
+![model](https://img.shields.io/badge/model-OpenAI%20Compatible-5b5cf6)
 
-- Docker 和 Docker Compose
-- 兼容 OpenAI API 的密钥（或使用任何兼容 OpenAI 协议的 API 服务）
+</div>
+
+## 展示 / Preview
+
+![Shred 时间线界面](docs/screenshots/shred-timeline.png)
+
+输入一句 `上午做了面试复盘，把简历改了，还约了下周一的面试。`，Shred 会拆出三条记录、解析出"上午"、把"预约面试"记为当天完成的动作——并按日期排列成时间线。
+
+## 特性 / Features
+
+- 📝 **自然语言记录** — 用中文随意描述，`Ctrl + Enter` 提交，源文本完整保留
+- ✂️ **LLM 自动整理** — 原子事件拆分、标题归一、相对时间解析（`昨天下午` → 昨天 15:00）、自动两级分类、最多 3 个标签
+- 📅 **日期时间线** — 按"今天 / 昨天 / 日期 · 星期"分组，纵向时间线引导，最新在前
+- 🗂 **分类治理** — 分类的创建、重命名、合并、删除，删除前展示影响范围
+- 🧠 **偏好记忆** — 手动修正分类会被记住，后续分类自动参考；可一键清除
+- ⏪ **安全撤销** — 分类结果 10 秒内可整组撤销，分类失败进入"待分类"安全重试
+- 🔒 **本地优先** — 单容器部署、SQLite 存储、数据与密钥不出本机，JSON 一键导出
+- 📱 **响应式 PWA** — 桌面端顶部导航 + 底部输入，移动端抽屉导航，可安装
 
 ## 快速开始 / Quick Start
 
+需要 Docker 与 Docker Compose。
+
 ```bash
-cp .env.example .env
-# 编辑 .env，填入 SHRED_OPENAI_API_KEY
+cp .env.example .env        # 首次：生成配置
+# 编辑 .env，填入 SHRED_OPENAI_API_KEY 与 SHRED_MODEL
 docker compose up -d
 ```
 
-打开浏览器访问 http://localhost:9400
+打开 **http://localhost:9400**，在底部输入框写下第一条记录。
 
-## API 兼容提供商 / API-Compatible Providers
+> ⚠️ 修改 `.env` 后请使用 `docker compose up -d --force-recreate` 重建容器；
+> `restart` 不会重新注入环境变量。
+
+## 配置模型 / Model Configuration
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `SHRED_OPENAI_API_KEY` | API 密钥 | （必须填写） |
-| `SHRED_API_BASE_URL` | API 地址 | `https://api.openai.com/v1` |
-| `SHRED_MODEL` | 模型名称 | 自动检测 |
+| `SHRED_OPENAI_API_KEY` | API 密钥（仅从本地环境读取，永不返回浏览器） | — |
+| `SHRED_API_BASE_URL` | OpenAI 兼容端点 | `https://api.openai.com/v1` |
+| `SHRED_MODEL` | 模型名称 | — |
 | `SHRED_BIND_ADDRESS` | 监听地址 | `127.0.0.1` |
-| `SHRED_PORT` | 监听端口 | `9400` |
+| `SHRED_PORT` | 端口 | `9400` |
 | `SHRED_DATA_DIR` | 数据目录 | `./data` |
 
-支持的兼容 API 包括 OpenAI、Azure OpenAI、Ollama、LM Studio、vLLM，以及任何提供 `/v1/chat/completions` 端点的服务。
+兼容 OpenAI、DeepSeek、Ollama、vLLM 等任何提供 `/v1/chat/completions` 的服务。
+填写后可在页面「设置 → 测试连接」验证。
 
-## 数据备份 / Backup
+## 工作原理 / How It Works
 
-所有数据存储在 `./data/shred.db`（SQLite 文件）中。备份时只需复制该文件：
-
-```bash
-cp data/shred.db data/shred-backup-$(date +%Y%m%d).db
+```text
+浏览器 / PWA
+   │  同源 HTTP
+   ▼
+FastAPI 应用（单容器）
+   ├─ 消息与事件服务       ← 先落库，再调用模型
+   ├─ 分类治理服务
+   ├─ 偏好记忆服务
+   ├─ 分类器适配器 ────────→ 你配置的 OpenAI 兼容端点
+   └─ 仓储层 ─────────────→ /data/shred.db
 ```
 
-## JSON 导出 / Export
+提交的消息**先持久化再调用模型**——模型超时或出错都不会丢失你的原文；
+模型输出经过严格校验后才写入，任何非法结果进入"待分类"而不是污染数据。
 
-在设置页面点击"导出数据"按钮，可下载完整的结构化 JSON 导出文件，包含所有分类、源消息和活动记录。
+## 数据与隐私 / Privacy
 
-## 更新 / Updating
+- 默认仅监听 `127.0.0.1`；局域网访问需显式开启且无内置认证
+- 使用云端模型时，记录文本会发送到你配置的模型服务——请勿输入敏感信息
+- API Key 只存在于后端进程环境变量中，不会显示在页面、日志或导出文件里
+- 所有数据都在本地 `./data/shred.db`，备份 = 复制该文件；设置页可随时导出 JSON
 
-```bash
-docker compose pull
-docker compose up -d
-```
+## 技术栈 / Tech Stack
 
-## 安全说明 / Security Notes
+| 层 | 技术 |
+|---|---|
+| 前端 | React 19 · TypeScript · Vite · TanStack Query · Vitest · Playwright |
+| 后端 | Python 3.12 · FastAPI · SQLAlchemy · Alembic · OpenAI SDK |
+| 部署 | Docker Compose 单容器 · SQLite · PWA (workbox) |
 
-- **默认仅监听本地回环地址 (127.0.0.1)**，确保数据不会被局域网内其他设备直接访问。
-- 如需在局域网内使用，可设置 `SHRED_BIND_ADDRESS=0.0.0.0`，但**请注意安全风险**，建议配合反向代理和 HTTPS 使用。
-- **PWA 功能需要 HTTPS**：安装为 PWA 需要在 HTTPS 环境下运行，否则 Service Worker 无法注册。
-- **隐私提醒**：所有消息文本会发送至配置的 API 端点进行分类处理，请勿输入敏感个人信息。本工具不会将数据上传至除配置的 API 外的任何第三方服务。
-
-## 运行测试 / Running Tests
-
-```bash
-# 后端测试（含覆盖率门槛：85%，零警告）
-python -m pytest tests/backend -q
-
-# 前端单元测试（覆盖率门槛见 vite.config.ts）
-cd frontend && npm run test:run && cd ..
-
-# 前端覆盖率报告
-cd frontend && npm run test:coverage && cd ..
-
-# 类型检查
-cd frontend && npx tsc --noEmit && cd ..
-
-# E2E 测试（3 条走浏览器 mock + 1 条走真实后端 + 假分类器）
-cd frontend && npx playwright test && cd ..
-```
-
-E2E 的最后一条用例启动真实 FastAPI + SQLite 管线（`SHRED_E2E_FAKE_CLASSIFIER=1` 注入确定性假模型，数据写入独立的 `data/e2e-test.db`），验证"后端在真实进程里能否跑起来"。
-
-## 人工验收输入 / Manual Acceptance Tests
-
-以下输入可用于验证系统功能。**分类质量（相对时间解析、分类树生成、偏好记忆）已用真实模型跑通验收（deepseek-v4-flash，2026-08-13，11/11 事件）；更换模型后建议重跑。**
-
-配置好 `SHRED_OPENAI_API_KEY` 后，逐条提交下面 5 条输入，共应产出 **11 条活动记录**：
-
-1. **"龙珠改看完了"** — 1 条
-2. **"昨天下午做了一部分 CCAF-R 的测试"** — 1 条（时间解析为昨天下午）
-3. **"上午做了面试复盘，把简历改了，还约了下周一的面试。"** — 3 条（"约面试"应记录为已完成动作，不生成未来任务）
-4. **"饭吃了，快递取了，邮件回了。"** — 3 条
-5. **"拖地、浇花、关窗，都弄了。"** — 3 条
-
-验收要点：事件数合计 11、源文本完整保留、相对时间解析正确、相关记录复用稳定分类、分类质量合理。手动验证结果与自动化测试分开记录，未配置 key 时此项不视为通过。
-
-## v0.1 非目标 / Non-Goals
-
-- 多用户支持
-- OAuth / 第三方登录
-- 移动端原生应用（仅 PWA）
-- 数据同步 / 云存储
-- 非中文语言处理
-- 图片 / 语音输入
-- 定时提醒 / 日历集成
-
-## 故障排除 / Troubleshooting
-
-### API 密钥为空 / Empty API Key
-
-确认 `.env` 文件中 `SHRED_OPENAI_API_KEY` 已正确填写。可以通过设置页面测试连接状态。
-
-### 模型返回无效 JSON / Model Returns Invalid JSON
-
-部分较小模型可能不遵循 JSON 输出格式。建议使用支持 function calling 的模型，或在设置中更换更强的模型。
-
-### 端口冲突 / Port Collision
-
-如果 9400 端口被占用，可通过 `SHRED_PORT` 环境变量更改端口：
+## 开发 / Development
 
 ```bash
-SHRED_PORT=3000 docker compose up -d
+python -m venv .venv && ./.venv/Scripts/python.exe -m pip install -e ".[dev]"
+
+# 后端测试（覆盖率门槛 85%，零警告）
+./.venv/Scripts/python.exe -m pytest tests/backend -q
+
+# 前端单元测试 / 覆盖率门槛 / 类型检查 / 构建
+cd frontend && npm ci
+npm run test:run          # 单元测试
+npm run test:coverage     # 覆盖率报告（门槛见 vite.config.ts）
+npx tsc --noEmit          # 类型检查
+npm run build             # 生产构建（含 PWA）
+
+# E2E：3 条浏览器 mock + 1 条真实后端链路（假分类器 + 独立测试库）
+npx playwright test
 ```
 
-### Docker 卷权限问题 / Docker Volume Permissions
+E2E 的最后一条用例启动真实 FastAPI + SQLite 管线（`SHRED_E2E_FAKE_CLASSIFIER=1` 注入确定性假模型，
+数据写入独立的 `data/e2e-test.db`），确保后端在真实进程里能跑起来。
 
-如果 `./data` 目录权限不正确，可手动创建并设置权限：
+## 真实模型验收 / Model Acceptance
 
-```bash
-mkdir -p data
-chmod 777 data
-```
+分类质量（相对时间解析、分类树生成、偏好记忆）已用真实模型跑通验收
+（deepseek-v4-flash，2026-08-13，**11/11 事件**）。更换模型后建议重跑：
 
-### 重置数据 / Resetting Data
+| 输入 | 预期事件数 |
+|---|---:|
+| 龙珠改看完了 | 1 |
+| 昨天下午做了一部分 CCAF-R 的测试 | 1 |
+| 上午做了面试复盘，把简历改了，还约了下周一的面试。 | 3 |
+| 饭吃了，快递取了，邮件回了。 | 3 |
+| 拖地、浇花、关窗，都弄了。 | 3 |
 
-```bash
-docker compose down
-rm -rf data
-docker compose up -d
-```
+验收要点：合计 11 个事件、源文本完整保留、相对时间正确、`预约面试` 记为当天完成的动作（非未来任务）、相关记录复用稳定分类。
 
-## 开源许可 / License
+## 非目标 / Non-Goals (v0.1)
 
-MIT License — 详见 [LICENSE](./LICENSE) 文件。
+- ❌ 多用户 / 账号体系 / 云同步
+- ❌ 原生 iOS / Android 应用（仅 PWA）
+- ❌ 任务、提醒、日历集成
+- ❌ 全文搜索、统计报表、回顾摘要
+- ❌ 图片 / 语音输入
+- ❌ 向量数据库与模型训练
+
+## 贡献 / Contributing
+
+欢迎 Issues 与 PR。请保持：提交前跑通全部测试与覆盖率门槛、零警告、
+不引入新的认证/云依赖。详细规划见 [`docs/superpowers/plans`](docs/superpowers/plans)。
+
+## License
+
+[MIT](LICENSE) © 一二三
