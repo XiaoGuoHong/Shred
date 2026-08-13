@@ -37,7 +37,7 @@ def _build_system_message(request: ClassificationRequest) -> str:
 4. Prefer reusable existing categories by their existing_id whenever possible. Use new_path only when no existing category fits.
 5. Category paths must contain at most two levels (root \u2192 child). Never exceed 2 levels.
 6. Return at most three tags per event.
-7. Do not create future tasks or todos \u2014 only classify events that are described as having happened or being planned with a specific time.
+7. A scheduling action is itself a completed action: "约了下周一的面试" is "预约下周一的面试" performed on the submission day, not a future event on next Monday. Never return an occurrence date later than the submission date unless the text explicitly states the event itself happened at that later time. Do not create future tasks, todos, or calendar events.
 8. Resolve relative time references using the submission time and timezone provided.
 
 === CONTEXT ===

@@ -125,6 +125,9 @@ def test_messages_forbid_future_task_creation() -> None:
 
     combined = " ".join(m["content"] for m in messages)
     assert "future" in combined.lower() or "todo" in combined.lower()
+    # Scheduling actions are completed actions on the submission day.
+    assert "预约下周一的面试" in combined
+    assert "scheduling action" in combined.lower()
 
 
 def test_user_role_contains_original_text() -> None:
