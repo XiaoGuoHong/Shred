@@ -13,3 +13,4 @@ frontend/test-results/
 .env
 data/
 *.tsbuildinfo
+frontend/coverage/
