@@ -52,21 +52,33 @@ export function Composer({
         queryKey: ["timeline"],
       });
 
+      let matched = false;
       for (const [key, cached] of cacheEntries) {
-        if (cached) {
-          queryClient.setQueryData<TimelinePage>(key, {
-            ...cached,
-            groups: cached.groups.map((g) =>
-              g.message.submission_uuid === data.message.submission_uuid
-                ? { message: data.message, events: data.events }
-                : g,
-            ),
-          });
-        }
+        if (!cached) continue;
+        matched =
+          matched ||
+          cached.groups.some(
+            (g) =>
+              g.message.submission_uuid === data.message.submission_uuid,
+          );
+        queryClient.setQueryData<TimelinePage>(key, {
+          ...cached,
+          groups: cached.groups.map((g) =>
+            g.message.submission_uuid === data.message.submission_uuid
+              ? { message: data.message, events: data.events }
+              : g,
+          ),
+        });
       }
 
       clearDraft();
       onSubmitted(data.message.id);
+      // Refetch as a consistency backstop only when the optimistic entry
+      // was lost (e.g. submit raced the initial timeline load); otherwise
+      // the replaced cache entry is authoritative.
+      if (!matched) {
+        queryClient.invalidateQueries({ queryKey: ["timeline"] });
+      }
       queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
