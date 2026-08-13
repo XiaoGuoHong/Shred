@@ -34,7 +34,8 @@ def engine():
     def _fk_on(dbapi_connection: object, _: object) -> None:
         dbapi_connection.execute("PRAGMA foreign_keys=ON")  # type: ignore[attr-defined]
 
-    return engine
+    yield engine
+    engine.dispose()
 
 
 def _seed_data(session: Session) -> None:

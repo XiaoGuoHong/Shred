@@ -70,6 +70,7 @@ class ActivityEvent(Base):
 
 class Category(Base):
     __tablename__ = "categories"
+    __mapper_args__ = {"confirm_deleted_rows": False}  # noqa: RUF012
     __table_args__ = (
         UniqueConstraint("parent_id", "normalized_name"),
         Index(

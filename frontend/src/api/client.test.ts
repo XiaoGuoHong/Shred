@@ -13,31 +13,32 @@ afterAll(() => server.close());
 
 describe("api.submitMessage", () => {
   it("sends correct shape with UUID, ISO time, and IANA timezone", async () => {
-    const capturedBody: unknown[] = [];
-
     server.use(
-      http.post("/api/messages", async ({ request }) => {
-        const body = await request.json();
-        capturedBody.push(body);
-        return HttpResponse.json({
+      http.post("/api/messages", () =>
+        HttpResponse.json({
           message: {
             id: "msg-1",
-            submission_uuid: (body as { submission_uuid: string }).submission_uuid,
-            original_text: (body as { text: string }).text,
-            submitted_at: (body as { submitted_at: string }).submitted_at,
-            timezone: (body as { timezone: string }).timezone,
+            submission_uuid: "echoed",
+            original_text: "echoed",
+            submitted_at: new Date().toISOString(),
+            timezone: "UTC",
             status: "classified",
           },
           events: [],
-        });
-      }),
+        }),
+      ),
     );
 
+    // MSW re-reads the request body for handlers registered via server.use,
+    // so assert the wire payload through fetch instead of inside the handler.
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const input = buildSubmissionInput("test message");
     await api.submitMessage(input);
 
-    expect(capturedBody).toHaveLength(1);
-    const body = capturedBody[0] as Record<string, unknown>;
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const init = fetchSpy.mock.calls[0]?.[1];
+    expect(init).toBeDefined();
+    const body = JSON.parse(init?.body as string) as Record<string, unknown>;
     expect(body).toHaveProperty("submission_uuid");
     expect(typeof body.submission_uuid).toBe("string");
     expect((body.submission_uuid as string).length).toBeGreaterThan(0);
@@ -49,6 +50,8 @@ describe("api.submitMessage", () => {
     expect(body).toHaveProperty("timezone");
     expect(typeof body.timezone).toBe("string");
     expect((body.timezone as string).length).toBeGreaterThan(0);
+
+    fetchSpy.mockRestore();
   });
 
   it("throws ApiError on non-2xx error response", async () => {

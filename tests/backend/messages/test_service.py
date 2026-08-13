@@ -30,8 +30,11 @@ def session() -> Session:
         dbapi_connection.execute("PRAGMA foreign_keys=ON")  # type: ignore[attr-defined]
 
     Base.metadata.create_all(engine)
-    with Session(engine, expire_on_commit=False) as s:
-        yield s
+    try:
+        with Session(engine, expire_on_commit=False) as s:
+            yield s
+    finally:
+        engine.dispose()
 
 
 _NOW = datetime(2026, 1, 15, 2, 0, 0, tzinfo=UTC)

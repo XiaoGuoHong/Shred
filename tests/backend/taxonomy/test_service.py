@@ -26,8 +26,11 @@ def session() -> Session:
         dbapi_connection.execute("PRAGMA foreign_keys=ON")  # type: ignore[attr-defined]
 
     Base.metadata.create_all(engine)
-    with Session(engine) as s:
-        yield s
+    try:
+        with Session(engine) as s:
+            yield s
+    finally:
+        engine.dispose()
 
 
 def _root(session: Session, name: str) -> Category:

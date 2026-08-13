@@ -28,6 +28,21 @@ package-dir = {"" = "backend"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--cov=shred --cov-report=term-missing --cov-fail-under=85"
+filterwarnings = [
+    # Starlette deprecates httpx in favour of httpx2; tracked upstream.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "pragma: no cover",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["shred"]

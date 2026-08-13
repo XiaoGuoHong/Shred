@@ -39,8 +39,11 @@ def session() -> Session:
         dbapi_connection.execute("PRAGMA foreign_keys=ON")  # type: ignore[attr-defined]
 
     Base.metadata.create_all(engine)
-    with Session(engine, expire_on_commit=False) as s:
-        yield s
+    try:
+        with Session(engine, expire_on_commit=False) as s:
+            yield s
+    finally:
+        engine.dispose()
 
 
 class FakeClassifier:
