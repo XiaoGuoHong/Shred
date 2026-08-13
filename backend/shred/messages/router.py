@@ -29,6 +29,13 @@ def _error(code: str, message: str, status: int) -> HTTPException:
 
 
 def get_classifier() -> Classifier:
+    from shred.core.config import get_env_settings
+
+    if get_env_settings().e2e_fake_classifier:
+        from shred.classification.fake_classifier import E2EFakeClassifier
+
+        return E2EFakeClassifier()
+
     from shred.classification.openai_adapter import OpenAIClassifier
 
     return OpenAIClassifier()

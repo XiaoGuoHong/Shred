@@ -14,6 +14,7 @@ class EnvSettings(BaseSettings):
     bind_address: str = "127.0.0.1"
     port: int = 8000
     data_dir: str = "./data"
+    e2e_fake_classifier: bool = False
 
     model_config = SettingsConfigDict(env_prefix="SHRED_", env_file=".env")
 

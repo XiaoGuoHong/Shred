@@ -1,45 +1,44 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-test.describe("Shred PWA end-to-end", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route("/api/timeline**", async (route) => {
-      const url = route.request().url();
-      if (url.includes("page_size=50") && !url.includes("status=")) {
-        return route.fulfill({
-          contentType: "application/json",
-          body: JSON.stringify({ groups: [], total: 0, page: 1, page_size: 50 }),
-        });
-      }
-      if (url.includes("status=pending")) {
-        return route.fulfill({
-          contentType: "application/json",
-          body: JSON.stringify({ groups: [], total: 0, page: 1, page_size: 50 }),
-        });
-      }
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ groups: [], total: 0, page: 1, page_size: 50 }),
-      });
-    });
-
-    await page.route("/api/categories", async (route) => {
-      return route.fulfill({
-        contentType: "application/json",
-        json: [
-          {
-            id: "cat-1",
-            name: "工作",
-            normalized_name: "工作",
-            children: [],
-            event_count: 5,
-            total_event_count: 5,
-          },
-        ],
-      });
+/** Empty timeline + basic category tree used by the mocked API tests. */
+async function mockBaseApi(page: Page) {
+  await page.route("/api/timeline**", (route) => {
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ groups: [], total: 0, page: 1, page_size: 50 }),
     });
   });
 
+  await page.route("/api/categories", (route) => {
+    return route.fulfill({
+      contentType: "application/json",
+      json: [
+        {
+          id: "cat-1",
+          name: "工作",
+          normalized_name: "工作",
+          children: [],
+          event_count: 5,
+          total_event_count: 5,
+        },
+      ],
+    });
+  });
+}
+
+async function mockHealth(page: Page) {
+  await page.route("**/api/health", (route) => {
+    return route.fulfill({
+      contentType: "application/json",
+      json: { status: "ok", version: "0.1.0" },
+    });
+  });
+}
+
+test.describe("Shred PWA end-to-end", () => {
   test("submits text and shows result cards", async ({ page }) => {
+    await mockBaseApi(page);
+    await mockHealth(page);
     const baseTime = new Date();
     baseTime.setHours(10, 0, 0, 0);
     const at = (minutes: number) =>
@@ -103,13 +102,6 @@ test.describe("Shred PWA end-to-end", () => {
             },
           ],
         }),
-      });
-    });
-
-    await page.route("**/api/health", async (route) => {
-      return route.fulfill({
-        contentType: "application/json",
-        json: { status: "ok", version: "0.1.0" },
       });
     });
 
@@ -468,5 +460,41 @@ test.describe("Shred PWA end-to-end", () => {
 
     await expect(page.locator(".message-group-text")).toContainText("另一条待处理的消息");
     await expect(page.locator(".event-card-title")).toContainText("待处理事项");
+  });
+
+  test("classifies through the real backend with a fake model", async ({
+    page,
+  }) => {
+    // No API routes are mocked here: requests hit the FastAPI pipeline
+    // started by the webServer (SHRED_E2E_FAKE_CLASSIFIER=1), which runs
+    // alembic migrations and persists to an isolated e2e-test.db.
+    await page.goto("/");
+
+    // Wait for the initial timeline fetch to land in the client cache
+    // before submitting; otherwise the composer's optimistic update has no
+    // timeline data to attach to and the group only appears after refetch.
+    await expect(
+      page.locator(".message-group, .timeline-empty").first(),
+    ).toBeVisible();
+
+    const text = `真后端链路 ${Date.now()}`;
+    await page.locator(".composer-input").fill(text);
+    await page.locator(".composer-submit").click();
+
+    // Locate the group by its unique source text so repeated runs of the
+    // shared e2e-test.db stay idempotent.
+    const submittedGroup = page.locator(".message-group").filter({
+      hasText: text,
+    });
+    await expect(submittedGroup.locator(".message-group-text")).toContainText(
+      text,
+      { timeout: 10_000 },
+    );
+    await expect(submittedGroup.locator(".event-card")).toHaveCount(2, {
+      timeout: 10_000,
+    });
+    await expect(
+      submittedGroup.locator(".event-card-title").first(),
+    ).toContainText("假模型事件一");
   });
 });
