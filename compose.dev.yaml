@@ -1,0 +1,21 @@
+# Development override: mount source code into the container so edits
+# take effect without rebuilding the image.
+#
+# Usage:
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d --force-recreate
+#
+# - backend: ./backend is mounted and uvicorn runs with --reload
+# - frontend: ./frontend/dist is mounted; run `npm run build` locally and
+#   refresh the page — no docker build needed
+services:
+  shred:
+    volumes:
+      - "${SHRED_DATA_DIR:-./data}:/data"
+      - ./backend:/app/backend
+      - ./frontend/dist:/app/static
+    environment:
+      PYTHONPATH: /app/backend
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "alembic upgrade head && exec uvicorn shred.main:app --host 0.0.0.0 --port 8000 --reload"

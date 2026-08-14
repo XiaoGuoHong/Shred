@@ -32,10 +32,25 @@
 
 ## 快速开始 / Quick Start
 
-需要 Docker 与 Docker Compose。
+### 方式一:无 Docker(推荐日常使用)
+
+需要 Python 3.12+ 与 Node.js 20+。首次运行自动创建虚拟环境、安装依赖并构建前端:
 
 ```bash
-cp .env.example .env        # 首次：生成配置
+./start.sh              # 一键启动 → http://localhost:9400
+./start.sh --build      # 前端有改动时,强制重新构建后启动
+```
+
+开发模式(代码改动秒级生效,浏览器开 http://localhost:5173):
+
+```bash
+./dev.sh                # 后端热重载 + 前端热更新
+```
+
+### 方式二:Docker
+
+```bash
+cp .env.example .env    # 首次：生成配置
 # 编辑 .env，填入 SHRED_OPENAI_API_KEY 与 SHRED_MODEL
 docker compose up -d
 ```
@@ -44,6 +59,7 @@ docker compose up -d
 
 > ⚠️ 修改 `.env` 后请使用 `docker compose up -d --force-recreate` 重建容器；
 > `restart` 不会重新注入环境变量。
+> 开发时想改代码即时生效，可用 `docker compose -f compose.yaml -f compose.dev.yaml up -d`（挂载源码 + 自动重载）。
 
 ## 配置模型 / Model Configuration
 
